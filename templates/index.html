@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}首页 - MicroPython MIP 仓库{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="mb-3">MicroPython 包仓库</h1>
+        <p class="lead">
+            一个类似 PyPI 的 MicroPython 包管理仓库。上传、分享和发现 MicroPython 包。
+        </p>
+    </div>
+    <div class="col-md-4 text-end">
+        {% if user %}
+        <a href="{{ url_for('upload') }}" class="btn btn-success btn-lg">
+            <i class="bi bi-upload"></i> 上传新包
+        </a>
+        {% else %}
+        <a href="{{ url_for('login') }}" class="btn btn-primary btn-lg">
+            <i class="bi bi-github"></i> 登录以发布包
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-body text-center">
+                <h3>{{ total_packages }}</h3>
+                <p class="text-muted">总包数量</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <h3 class="mb-3">最新上传的包</h3>
+    </div>
+    
+    {% if recent_packages %}
+        {% for package in recent_packages %}
+        <div class="col-md-4">
+            <div class="card package-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a href="{{ url_for('package_detail', name=package.name) }}" class="text-decoration-none">
+                            {{ package.name }}
+                        </a>
+                        <span class="badge bg-primary version-badge">{{ package.version }}</span>
+                    </h5>
+                    <p class="card-text text-muted">
+                        {% if package.description %}
+                            {{ package.description[:100] }}{% if package.description|length > 100 %}...{% endif %}
+                        {% else %}
+                            暂无描述
+                        {% endif %}
+                    </p>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="bi bi-person"></i> {{ package.owner_name }}
+                        </small>
+                        <small class="text-muted">
+                            <i class="bi bi-clock"></i> {{ package.created_at[:10] }}
+                        </small>
+                    </div>
+                </div>
+                <div class="card-footer bg-transparent">
+                    <a href="{{ url_for('package_detail', name=package.name) }}" class="btn btn-sm btn-outline-primary">
+                        查看详情
+                    </a>
+                    <a href="{{ url_for('download_package', name=package.name, version=package.version) }}" 
+                       class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-download"></i> 下载
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                暂无包上传，成为第一个上传者吧！
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h4>如何使用？</h4>
+                <ol>
+                    <li>登录您的 GitHub 账户</li>
+                    <li>上传包含 <code>package.json</code> 的 MicroPython 包</li>
+                    <li>其他用户可以通过 <code>mip</code> 工具安装您的包</li>
+                </ol>
+                <h5>示例 package.json:</h5>
+                <pre><code>{
+  "name": "example-package",
+  "version": "1.0.0",
+  "description": "这是一个示例包",
+  "author": "Your Name",
+  "license": "MIT"
+}</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

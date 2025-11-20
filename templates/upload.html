@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}上传包 - MicroPython MIP 仓库{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <h1 class="mb-4">
+            <i class="bi bi-upload"></i> 上传 MicroPython 包
+        </h1>
+        
+        <div class="card">
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" id="uploadForm">
+                    <div class="mb-4">
+                        <label for="files" class="form-label">
+                            <strong>选择包文件夹或文件</strong>
+                        </label>
+                        <input class="form-control" type="file" name="files" id="files" 
+                               multiple webkitdirectory directory required>
+                        <div class="form-text">
+                            请选择包文件夹或按住 Ctrl 键选择多个文件。必须包含一个 <code>package.json</code> 文件。
+                            <br>使用 <code>webkitdirectory</code> 属性（Chrome/Edge）可以直接选择文件夹。
+                        </div>
+                    </div>
+                    
+                    <div id="fileList" class="mb-3" style="display: none;">
+                        <h6>已选择文件：</h6>
+                        <ul id="fileItems" class="list-group list-group-flush small"></ul>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h5><i class="bi bi-info-circle"></i> 上传要求：</h5>
+                        <ul>
+                            <li>必须包含 <code>package.json</code> 文件</li>
+                            <li><code>package.json</code> 必须包含 <code>name</code> 和 <code>version</code> 字段</li>
+                            <li>建议包含 <code>README.md</code> 文件用于文档</li>
+                            <li>包名应该小写，使用连字符分隔单词</li>
+                            <li>支持上传整个文件夹（Chrome/Edge浏览器）</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary me-md-2">取消</a>
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" id="loadingSpinner"></span>
+                            上传包
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <i class="bi bi-file-earmark-code"></i> package.json 示例
+            </div>
+            <div class="card-body">
+                <pre><code>{
+  "name": "my-micropython-package",
+  "version": "1.0.0",
+  "description": "我的 MicroPython 包描述",
+  "author": "Your Name",
+  "license": "MIT",
+  "keywords": ["micropython", "iot", "sensor"],
+  "url": "https://github.com/username/repository",
+  "dependencies": {
+    "other-package": ">=1.0.0"
+  }
+}</code></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.getElementById('files');
+    const fileList = document.getElementById('fileList');
+    const fileItems = document.getElementById('fileItems');
+    const uploadForm = document.getElementById('uploadForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    
+    fileInput.addEventListener('change', function(e) {
+        const files = e.target.files;
+        fileItems.innerHTML = '';
+        
+        if (files.length > 0) {
+            fileList.style.display = 'block';
+            
+            // 显示前20个文件
+            const maxFiles = Math.min(files.length, 20);
+            for (let i = 0; i < maxFiles; i++) {
+                const li = document.createElement('li');
+                li.className = 'list-group-item';
+                li.textContent = files[i].webkitRelativePath || files[i].name;
+                fileItems.appendChild(li);
+            }
+            
+            if (files.length > 20) {
+                const li = document.createElement('li');
+                li.className = 'list-group-item text-muted';
+                li.textContent = `... 以及另外 ${files.length - 20} 个文件`;
+                fileItems.appendChild(li);
+            }
+        } else {
+            fileList.style.display = 'none';
+        }
+    });
+    
+    uploadForm.addEventListener('submit', function() {
+        // 显示加载动画，禁用提交按钮
+        loadingSpinner.classList.remove('d-none');
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 上传中...';
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

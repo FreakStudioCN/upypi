@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}页面未找到 - MicroPython MIP 仓库{% endblock %}
+
+{% block content %}
+<div class="text-center py-5">
+    <h1 class="display-1 text-muted">404</h1>
+    <h2 class="mb-4">页面未找到</h2>
+    <p class="lead mb-4">抱歉，您请求的页面不存在。</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+        <i class="bi bi-house"></i> 返回首页
+    </a>
+</div>
+{% endblock %}

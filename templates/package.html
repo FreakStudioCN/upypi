@@ -1,0 +1,191 @@
+{% extends "base.html" %}
+
+{% block title %}{{ package_name }} - MicroPython MIP 仓库{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="mb-1">{{ package_name }}</h1>
+        <p class="lead">
+            {% if packages[0].description %}
+                {{ packages[0].description }}
+            {% endif %}
+        </p>
+        <div class="d-flex align-items-center mb-3">
+            <span class="badge bg-primary me-2">v{{ latest_version }}</span>
+            <small class="text-muted me-3">
+                <i class="bi bi-person"></i> {{ packages[0].owner_name }}
+            </small>
+            <small class="text-muted">
+                <i class="bi bi-calendar"></i> 最后更新: {{ packages[0].created_at[:10] }}
+            </small>
+        </div>
+    </div>
+    <div class="col-md-4 text-end">
+        <div class="btn-group">
+            <a href="{{ url_for('download_package', name=package_name, version=latest_version) }}" 
+               class="btn btn-success btn-lg">
+                <i class="bi bi-download"></i> 下载 v{{ latest_version }}
+            </a>
+            {% if user and user.id == packages[0].owner_id %}
+            <button type="button" class="btn btn-danger btn-lg" 
+                    data-bs-toggle="modal" data-bs-target="#deleteModal">
+                <i class="bi bi-trash"></i> 删除
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- 左侧信息栏 -->
+    <div class="col-md-3">
+        <div class="card mb-3">
+            <div class="card-header">
+                <i class="bi bi-info-circle"></i> 包信息
+            </div>
+            <div class="card-body">
+                <dl>
+                    <dt>所有者</dt>
+                    <dd>{{ packages[0].owner_name }}</dd>
+                    
+                    <dt>最新版本</dt>
+                    <dd>{{ latest_version }}</dd>
+                    
+                    <dt>版本数量</dt>
+                    <dd>{{ versions|length }}</dd>
+                    
+                    <dt>首次发布</dt>
+                    <dd>{{ packages[-1].created_at[:10] }}</dd>
+                </dl>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-tags"></i> 所有版本
+            </div>
+            <div class="card-body">
+                <div class="list-group">
+                    {% for version in versions %}
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>v{{ version }}</span>
+                        <div>
+                            <a href="{{ url_for('download_package', name=package_name, version=version) }}" 
+                               class="btn btn-sm btn-outline-success">
+                                <i class="bi bi-download"></i>
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 右侧内容区 -->
+    <div class="col-md-9">
+        {% if readme_content %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-file-earmark-text"></i> README
+            </div>
+            <div class="card-body">
+                <div class="markdown-content readme-content">
+                    {{ readme_content|safe }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-file-earmark-code"></i> 文件列表 (最新版本)
+            </div>
+            <div class="card-body">
+                {% if files %}
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>文件名</th>
+                                <th>大小</th>
+                                <th>类型</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for file in files %}
+                            <tr>
+                                <td>
+                                    {% if file.is_package_json %}
+                                        <i class="bi bi-file-text text-success"></i>
+                                    {% elif file.is_readme %}
+                                        <i class="bi bi-file-earmark-text text-primary"></i>
+                                    {% elif file.is_main %}
+                                        <i class="bi bi-file-code text-warning"></i>
+                                    {% elif file.name.endswith('.py') %}
+                                        <i class="bi bi-file-code"></i>
+                                    {% else %}
+                                        <i class="bi bi-file-earmark"></i>
+                                    {% endif %}
+                                    {{ file.name }}
+                                </td>
+                                <td><small class="text-muted">{{ file.size }}</small></td>
+                                <td>
+                                    {% if file.is_package_json %}
+                                        <span class="badge bg-success">配置</span>
+                                    {% elif file.is_readme %}
+                                        <span class="badge bg-primary">文档</span>
+                                    {% elif file.is_main %}
+                                        <span class="badge bg-warning">主文件</span>
+                                    {% elif file.name.endswith('.py') %}
+                                        <span class="badge bg-info">Python</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">文件</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if files|length >= 20 %}
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i> 只显示前 20 个文件
+                </div>
+                {% endif %}
+                {% else %}
+                <p class="text-muted">暂无文件信息</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 删除确认模态框 -->
+{% if user and user.id == packages[0].owner_id %}
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">确认删除包</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>确定要删除包 <strong>{{ package_name }}</strong> 吗？</p>
+                <p class="text-danger">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    此操作将删除包的所有版本和文件，且无法恢复！
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                <form action="{{ url_for('delete_package_route', name=package_name) }}" method="post">
+                    <button type="submit" class="btn btn-danger">确认删除</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

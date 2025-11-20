@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}我的面板 - MicroPython MIP 仓库{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="mb-3">
+            <i class="bi bi-speedometer2"></i> 我的面板
+        </h1>
+        <p class="lead">欢迎回来，{{ user.login }}！</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{{ url_for('upload') }}" class="btn btn-success">
+            <i class="bi bi-plus-circle"></i> 上传新包
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card mb-3">
+            <div class="card-body text-center">
+                <h4>{{ packages|length }}</h4>
+                <p class="text-muted">我的包</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <h3 class="mb-3">我的包</h3>
+        
+        {% if packages %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>包名</th>
+                        <th>版本</th>
+                        <th>描述</th>
+                        <th>上传时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for package in packages %}
+                    <tr>
+                        <td>
+                            <strong>
+                                <a href="{{ url_for('package_detail', name=package.name) }}">
+                                    {{ package.name }}
+                                </a>
+                            </strong>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary">{{ package.version }}</span>
+                        </td>
+                        <td>
+                            {% if package.description %}
+                                {{ package.description[:50] }}{% if package.description|length > 50 %}...{% endif %}
+                            {% else %}
+                                <span class="text-muted">暂无描述</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ package.created_at[:10] }}</td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ url_for('package_detail', name=package.name) }}" 
+                                   class="btn btn-outline-primary">
+                                    查看
+                                </a>
+                                <a href="{{ url_for('download_package', name=package.name, version=package.version) }}"
+                                   class="btn btn-outline-success">
+                                    下载
+                                </a>
+                                <button type="button" class="btn btn-outline-danger" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#deleteModal{{ package.id }}">
+                                    删除
+                                </button>
+                            </div>
+                            
+                            <!-- 删除确认模态框 -->
+                            <div class="modal fade" id="deleteModal{{ package.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">确认删除</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            确定要删除包 <strong>{{ package.name }}</strong> 吗？
+                                            此操作将删除包的所有版本且无法恢复！
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                            <form action="{{ url_for('delete_package_route', name=package.name) }}" method="post">
+                                                <button type="submit" class="btn btn-danger">确认删除</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info">
+            您还没有上传任何包。
+            <a href="{{ url_for('upload') }}" class="alert-link">点击这里上传第一个包</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
