@@ -6,12 +6,6 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 url_path_prefix = '/api'
 
-db_util = DBUtil('192.168.102.20', 'root', '123456', 'develo')  # auto_dev_hub
-KEYWORDS = ['1003626', '1003609']
-Ding_URl = "https://oapi.dingtalk.com/robot/send?access_token=xxxx"
-Ding_SCRET = "xxxx"
-
-
 # base configuration
 class Config:
     SECRET_KEY = os.environ.get('KEY') or '123456'
@@ -23,17 +17,17 @@ class Config:
 
 # 开发环境
 class DevelopmentConfig(Config):
-    SQLALCHEMY_DATABASE_URI = 'mysql+pymysql://root:123456@192.168.102.20:3306/auto_dev_hub'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, '..', 'db', 'dev.db')
 
 
 # 测试环境
 class TestingConfig(Config):
-    SQLALCHEMY_DATABASE_URI = 'mysql://root:password@localhost:3306/test-database'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, '..', 'db', 'test.db')
 
 
 # 生产环境
 class ProductionConfig(Config):
-    SQLALCHEMY_DATABASE_URI = 'mysql://root:password@localhost:3306/product-database'
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///' + os.path.join(BASE_DIR, '..', 'db', 'stable.db')
 
 
 # config dict
