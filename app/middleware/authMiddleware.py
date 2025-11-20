@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2024/5/3 10:22
-# @Author  : 南宫乘风
-# @Email   : 1794748404@qq.com
-# @File    : authMiddleware.py
-# @Software: PyCharm
 import itsdangerous
 from flask import g, request
 from flask_httpauth import HTTPTokenAuth

@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2024/5/2 22:10
-# @Author  : 南宫乘风
-# @Email   : 1794748404@qq.com
-# @File    : LogHandler.py
-# @Software: PyCharm
 import os
 
 import logging

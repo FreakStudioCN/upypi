@@ -1,11 +1,4 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2024/5/2 12:05
-# @Author  : 南宫乘风
-# @Email   : 1794748404@qq.com
-# @File    : result.py
-# @Software: PyCharm
 from flask import jsonify
-
 
 class Result:
     def __init__(self, code, msg, data=None):

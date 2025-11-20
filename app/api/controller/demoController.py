@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2024-05-21 10:21
-# @Author  : 南宫乘风
-# @Email   : 1794748404@qq.com
-# @File    : demoController.py
-# @Software: PyCharm
 from flasgger import swag_from
 from flask import Blueprint, request
 

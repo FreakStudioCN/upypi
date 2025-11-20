@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2024-05-08 18:32
-# @Author  : 南宫乘风
-# @Email   : 1794748404@qq.com
-# @File    : MySQLUtil.py
-# @Software: PyCharm
-
 import pymysql
 from pymysql import OperationalError, InterfaceError
 

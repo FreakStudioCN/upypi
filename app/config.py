@@ -1,9 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Time    : 2024/5/2 12:04
-# @Author  : 南宫乘风
-# @Email   : 1794748404@qq.com
-# @File    : config.py
-# @Software: PyCharm
 import os
 
 from app.common.util.MySQLUtil import DBUtil

@@ -1,8 +1,6 @@
-# Python-Flask-Template
+# Upypi
 
 ## 项目概述
-
- `Python-Flask-Template` 是一个基于 Flask 框架的 Python 项目模板，旨在提供一个规范化的项目结构，帮助开发者快速搭建和开发 Flask 应用。该模板涵盖了常用的目录结构和功能模块，使得代码组织更为清晰和可维护。 
 
 ## 技术架构
 
@@ -80,27 +78,12 @@ Python-Flask-Template/
 
 ## 使用说明
 
- 克隆项目代码： 
-
+安装依赖： 
 ```
- git clone  https://github.com/nangongchengfeng/Python-Flask-Template.git
-```
-
- 安装依赖： 
-
-```
-cd Python-Flask-Template
-pip install APScheduler flasgger Flask==2.2.5
-Flask_Cors==4.0.0
-Flask_HTTPAuth==4.5.0
-Flask_Migrate==3.1.0
-Flask_SQLAlchemy==2.5.1
-itsdangerous==2.1.2
-PyMySQL==1.1.0
+pip install Flask Flask_SQLAlchemy Flask_Migrate PyMySQL Flask_HTTPAuth itsdangerous flasgger flask_socketio APScheduler Flask_Cors
 ```
 
 运行项目
-
 ```
 python  manage.py
 ```
