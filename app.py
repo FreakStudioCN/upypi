@@ -19,6 +19,7 @@ except Exception:
 # config from env
 GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID", "")
 GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
+DEV_MODE = os.environ.get("DEV_MODE") == "1"
 SECRET_KEY = os.environ.get("FLASK_SECRET", "dev-secret-change-me")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PKGS_DIR = os.path.join(BASE_DIR, "pkgs")
@@ -86,6 +87,26 @@ def current_user():
 # ---------- GitHub OAuth ----------
 @app.route("/login")
 def login():
+    # --- dev mode: auto login as admin ---
+    if DEV_MODE:
+        conn = get_db()
+        c = conn.cursor()
+        # ensure admin user exists
+        admin = c.execute("SELECT * FROM users WHERE login = 'admin'").fetchone()
+        if not admin:
+            c.execute(
+                "INSERT INTO users (github_id, login, name) VALUES (?, ?, ?)",
+                (-1, "admin", "Development Admin")
+            )
+            conn.commit()
+            admin = c.execute("SELECT * FROM users WHERE login = 'admin'").fetchone()
+        conn.close()
+
+        session["user_id"] = admin["id"]
+        session["github_login"] = "admin"
+        return redirect(url_for("index"))
+    # --------------------------------------
+
     if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
         return render_template("login.html", message="GitHub OAuth 未配置（请设置 GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET 环境变量）")
     state = os.urandom(16).hex()
