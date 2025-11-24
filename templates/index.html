@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>搜索包</h2>
+<form method="get" action="{{ url_for('index') }}">
+  <input type="text" name="q" value="{{ q }}" placeholder="包名或关键字">
+  <button>搜索</button>
+</form>
+
+{% if packages %}
+  <div style="margin-top:18px">
+  {% for p in packages %}
+    <div class="card">
+      <a href="{{ url_for('package_view', name=p['name']) }}"><strong>{{ p['name'] }}</strong></a>
+      <div class="muted">作者ID: {{ p['owner_id'] }}</div>
+    </div>
+  {% endfor %}
+  </div>
+{% else %}
+  <p class="muted">未找到包（或数据库为空）。</p>
+{% endif %}
+{% endblock %}

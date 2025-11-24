@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>上传包版本</h2>
+<p class="muted">上传一个包含 <code>package.json</code> 的 zip，或使用浏览器的文件夹上传（Chrome 支持）。</p>
+
+<form method="post" enctype="multipart/form-data" action="{{ url_for('upload') }}">
+  <div class="card">
+    <h4>方法一：上传 zip</h4>
+    <input type="file" name="zipfile" accept=".zip">
+    <p class="muted">zip 内应包含 package.json（根或子目录）。</p>
+  </div>
+
+  <div class="card">
+    <h4>方法二：上传整个文件夹（Chrome）</h4>
+    <input type="file" name="files" webkitdirectory directory multiple>
+    <p class="muted">选择文件夹后，浏览器会把相对路径一并发送。</p>
+  </div>
+
+  <button type="submit">上传</button>
+</form>
+{% endblock %}

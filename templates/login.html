@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>登录</h2>
+<p>{{ message or "使用 GitHub 登录" }}</p>
+{% if not message %}
+  <a href="{{ url_for('login') }}">用 GitHub 登录</a>
+{% endif %}
+{% endblock %}

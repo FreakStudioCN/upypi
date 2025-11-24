@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{ title|default("MicroPyPkg") }}</title>
+  <style>
+    body { font-family: system-ui, Arial; max-width: 900px; margin: 24px auto; padding: 0 12px; }
+    header { display:flex; justify-content:space-between; align-items:center; }
+    nav a { margin-right: 10px; }
+    .flash { background:#ffd; padding:8px; border:1px solid #eee; margin:8px 0; }
+    .card { border:1px solid #eee; padding:12px; margin:12px 0; border-radius:6px; }
+    .muted { color: #666; font-size: 0.9em; }
+    input[type="text"]{padding:6px; width:280px}
+  </style>
+</head>
+<body>
+  <header>
+    <div><a href="{{ url_for('index') }}"><strong>MicroPyPkg</strong></a></div>
+    <nav>
+      <a href="{{ url_for('index') }}">主页</a>
+      {% if user %}
+        <a href="{{ url_for('dashboard') }}">控制台</a>
+        <a href="{{ url_for('logout') }}">登出 {{ user['login'] }}</a>
+      {% else %}
+        <a href="{{ url_for('login') }}">使用 GitHub 登录</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      <div class="flash">
+        {% for m in messages %} <div>{{ m }}</div> {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+  <footer style="margin-top:24px;font-size:0.9em;color:#666">
+    <div>存储目录：<code>{{ pkgs_dir if pkgs_dir is defined else 'pkgs/' }}</code></div>
+  </footer>
+</body>
+</html>

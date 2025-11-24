@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{{ package['name'] }}</h2>
+
+<div class="card">
+  <h4>安装命令（示例）</h4>
+  <p class="muted">示例：使用 upip 或 mip（根据你设备的安装工具选择）</p>
+  <pre>upip.install('{{ package['name'] }}=={{ latest_ver if latest_ver else (versions[0]['version'] if versions else 'x.y.z') }}')</pre>
+  <pre>mip install {{ package['name'] }}=={{ latest_ver if latest_ver else (versions[0]['version'] if versions else 'x.y.z') }}</pre>
+</div>
+
+<div class="card">
+  <h4>版本列表</h4>
+  {% if versions %}
+    <ul>
+    {% for v in versions %}
+      <li>{{ v['version'] }} — 上传于 {{ v['uploaded_at'] }}
+         — <a href="{{ url_for('download_file', name=package['name'], version=v['version'], filename='package.json') }}">package.json</a>
+      </li>
+    {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">暂无版本</p>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h4>README</h4>
+  {% if readme_html %}
+    <div>{{ readme_html|safe }}</div>
+  {% else %}
+    <p class="muted">无 README.md</p>
+  {% endif %}
+</div>
+{% endblock %}
