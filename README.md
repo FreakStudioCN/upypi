@@ -2,18 +2,16 @@
 
 ## 项目概述
 
-## 使用说明
+## 运行项目
 
-安装依赖： 
-```
-pip install Flask requests markdown
-```
+1. 本地运行：
+    1. 安装依赖：pip install Flask requests markdown
+    2. python app.py
+2. 容器运行（推荐）： 
+    1. docker run -p 8080:80 codeberg.org/eoelab/cenv:upypi
+    2. 注意持久化目录为`/upypi/db`，`/upypi/pkgs`
 
-运行项目
-```
-python app.py
-```
 
 ## 项目演示
 
-http://127.0.0.1:5000/
+http://127.0.0.1:80/

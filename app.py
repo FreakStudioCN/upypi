@@ -17,10 +17,17 @@ except Exception:
     markdown = None
 
 # config from env
-GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID", "")
-GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET", "")
-DEV_MODE = os.environ.get("DEV_MODE") == "1"
-SECRET_KEY = os.environ.get("FLASK_SECRET", "dev-secret-change-me")
+GITHUB_CLIENT_ID = os.environ.get("GITHUB_CLIENT_ID")
+GITHUB_CLIENT_SECRET = os.environ.get("GITHUB_CLIENT_SECRET")
+SECRET_KEY = os.environ.get("FLASK_SECRET")
+
+if not GITHUB_CLIENT_ID:
+    raise RuntimeError("GITHUB_CLIENT_ID is not set in the environment.")
+if not GITHUB_CLIENT_SECRET:
+    raise RuntimeError("GITHUB_CLIENT_SECRET is not set in the environment.")
+if not SECRET_KEY:
+    raise RuntimeError("FLASK_SECRET is not set in the environment.")
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PKGS_DIR = os.path.join(BASE_DIR, "pkgs")
 DB_PATH = os.path.join(BASE_DIR, "db/db.sqlite3")
@@ -87,28 +94,6 @@ def current_user():
 # ---------- GitHub OAuth ----------
 @app.route("/login")
 def login():
-    # --- dev mode: auto login as admin ---
-    if DEV_MODE:
-        conn = get_db()
-        c = conn.cursor()
-        # ensure admin user exists
-        admin = c.execute("SELECT * FROM users WHERE login = 'admin'").fetchone()
-        if not admin:
-            c.execute(
-                "INSERT INTO users (github_id, login, name) VALUES (?, ?, ?)",
-                (-1, "admin", "Development Admin")
-            )
-            conn.commit()
-            admin = c.execute("SELECT * FROM users WHERE login = 'admin'").fetchone()
-        conn.close()
-
-        session["user_id"] = admin["id"]
-        session["github_login"] = "admin"
-        return redirect(url_for("index"))
-    # --------------------------------------
-
-    if not GITHUB_CLIENT_ID or not GITHUB_CLIENT_SECRET:
-        return render_template("login.html", message="GitHub OAuth 未配置（请设置 GITHUB_CLIENT_ID/GITHUB_CLIENT_SECRET 环境变量）")
     state = os.urandom(16).hex()
     session["oauth_state"] = state
     redirect_uri = url_for('callback', _external=True)
