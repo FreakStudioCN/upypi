@@ -227,6 +227,43 @@ def create_package():
     flash("包已创建。你仍需上传版本文件（zip 或 整个文件夹）")
     return redirect(url_for("dashboard"))
 
+@app.route("/delete_package/<name>", methods=["POST"])
+@login_required
+def delete_package(name):
+    user = current_user()
+
+    conn = get_db()
+    c = conn.cursor()
+
+    pkg = c.execute(
+        "SELECT * FROM packages WHERE name=?",
+        (name,)
+    ).fetchone()
+
+    if not pkg:
+        conn.close()
+        abort(404)
+
+    # 权限验证：包 owner 或 admin（dev 模式）
+    if not (pkg["owner_id"] == user["id"] or session.get("github_login") == "admin"):
+        conn.close()
+        abort(403)
+
+    # 删除 versions 记录
+    c.execute("DELETE FROM versions WHERE package_id = ?", (pkg["id"],))
+    # 删除 package
+    c.execute("DELETE FROM packages WHERE id = ?", (pkg["id"],))
+    conn.commit()
+    conn.close()
+
+    # 删除磁盘目录 pkgs/<name>
+    pkg_dir = os.path.join(PKGS_DIR, name)
+    if os.path.exists(pkg_dir):
+        shutil.rmtree(pkg_dir, ignore_errors=True)
+
+    flash(f"包 {name} 已成功删除")
+    return redirect(url_for("dashboard"))
+
 @app.route("/upload", methods=["GET", "POST"])
 @login_required
 def upload():
@@ -365,18 +402,9 @@ def package_view(name):
     return render_template("package.html", package=pkg, versions=versions, readme_html=readme_html, latest_ver=latest_ver, user=current_user())
 
 
-@app.route("/download/<name>/<version>/<path:filename>")
-def download_file(name, version, filename):
-    try:
-        dest_dir, _, _ = secure_package_path(name, version)
-    except ValueError:
-        abort(404)
-    # restrict to files inside dest_dir
-    if ".." in filename or filename.startswith("/"):
-        abort(400)
-    if not os.path.exists(os.path.join(dest_dir, filename)):
-        abort(404)
-    return send_from_directory(dest_dir, filename, as_attachment=True)
+@app.route('/pkgs/<path:filename>')
+def public_pkgs(filename):
+    return send_from_directory(PKGS_DIR, filename)
 
 # small API to list versions (could be used by micropython clients)
 @app.route("/api/<name>/versions")
@@ -396,4 +424,4 @@ def notfound(e):
     return render_template("404.html"), 404
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    app.run(debug=True, host="0.0.0.0", port=80)
