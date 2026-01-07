@@ -7,7 +7,13 @@
     <ul>
       {% for p in packages %}
         <li><a href="{{ url_for('package_view', name=p['name']) }}">{{ p['name'] }}</a></li>
-      {% endfor %}
+        <form action="{{ url_for('delete_package', name=p['name']) }}" method="post" style="display:inline;">
+            <button type="submit" onclick="return confirm('确定要删除 {{p['name']}} 包吗？此操作不可恢复！');"
+                    class="btn btn-danger btn-sm">
+                删除
+            </button>
+        </form>
+        {% endfor %}
     </ul>
   {% else %}
     <p class="muted">你还没有创建包。</p>
@@ -22,12 +28,7 @@
   </form>
 </section>
 
-<form action="{{ url_for('delete_package', name=p['name']) }}" method="post" style="display:inline;">
-    <button type="submit" onclick="return confirm('确定要删除 {{p['name']}} 包吗？此操作不可恢复！');"
-            class="btn btn-danger btn-sm">
-        删除
-    </button>
-</form>
+
 
 <section class="card">
   <h3>上传包版本</h3>
