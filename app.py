@@ -31,11 +31,9 @@ if not SECRET_KEY:
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 PKGS_DIR = os.path.join(BASE_DIR, "pkgs")
 DB_PATH = os.path.join(BASE_DIR, "db/db.sqlite3")
-ALLOWED_EXTENSIONS = {"zip"}
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
-
 
 # ---------- minimal sqlite helper ----------
 def get_db():
@@ -157,13 +155,6 @@ def secure_package_path(pkg_name, version):
     if not safe_pkg or not safe_ver:
         raise ValueError("unsafe package or version")
     return os.path.join(PKGS_DIR, safe_pkg, safe_ver), safe_pkg, safe_ver
-
-def extract_zip_to_tmp(zipfile_path):
-    import zipfile
-    tmpdir = tempfile.mkdtemp()
-    with zipfile.ZipFile(zipfile_path, 'r') as z:
-        z.extractall(tmpdir)
-    return tmpdir
 
 # ---------- pages ----------
 @app.route("/")
@@ -391,4 +382,4 @@ def notfound(e):
     return render_template("404.html"), 404
 
 if __name__ == "__main__":
-    app.run(ssl_context=('/tls/cert.crt', '/tls/cert.key'), host="0.0.0.0", port=80)
+    app.run(ssl_context=('/tls/cert.crt', '/tls/cert.key'), host="0.0.0.0", port=443)
