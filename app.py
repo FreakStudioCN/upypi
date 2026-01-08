@@ -44,6 +44,7 @@ def get_db():
 def init_db():
     conn = get_db()
     c = conn.cursor()
+    # users table unchanged
     c.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY,
@@ -51,21 +52,17 @@ def init_db():
         login TEXT,
         name TEXT
     )""")
+    # packages table now stores every (package name, version) as a row
     c.execute("""
     CREATE TABLE IF NOT EXISTS packages (
         id INTEGER PRIMARY KEY,
-        name TEXT UNIQUE,
-        owner_id INTEGER,
-        FOREIGN KEY(owner_id) REFERENCES users(id)
-    )""")
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS versions (
-        id INTEGER PRIMARY KEY,
-        package_id INTEGER,
+        name TEXT,
         version TEXT,
+        owner_id INTEGER,
         filename TEXT,
         uploaded_at TEXT,
-        FOREIGN KEY(package_id) REFERENCES packages(id)
+        UNIQUE(name, version),
+        FOREIGN KEY(owner_id) REFERENCES users(id)
     )""")
     conn.commit()
     conn.close()
@@ -149,7 +146,7 @@ def logout():
 
 # ---------- helpers ----------
 def secure_package_path(pkg_name, version):
-    # only allow alnum, - and _
+    # only allow alnum, - and _ for package, and limited chars for version
     safe_pkg = "".join(c for c in pkg_name if c.isalnum() or c in "-_").strip()
     safe_ver = "".join(c for c in version if c.isalnum() or c in ".-_").strip()
     if not safe_pkg or not safe_ver:
@@ -162,9 +159,25 @@ def index():
     q = request.args.get("q", "").strip()
     conn = get_db()
     if q:
-        rows = conn.execute("SELECT * FROM packages WHERE name LIKE ? ORDER BY name", (f"%{q}%",)).fetchall()
+        # search package names
+        rows = conn.execute(
+            "SELECT p1.name, p1.version, p1.uploaded_at, u.login as owner_login "
+            "FROM packages p1 "
+            "JOIN (SELECT name, max(uploaded_at) as ma FROM packages WHERE name LIKE ? GROUP BY name) p2 "
+            "ON p1.name=p2.name AND p1.uploaded_at=p2.ma "
+            "LEFT JOIN users u ON p1.owner_id=u.id "
+            "ORDER BY p1.name",
+            (f"%{q}%",)
+        ).fetchall()
     else:
-        rows = conn.execute("SELECT * FROM packages ORDER BY name LIMIT 50").fetchall()
+        rows = conn.execute(
+            "SELECT p1.name, p1.version, p1.uploaded_at, u.login as owner_login "
+            "FROM packages p1 "
+            "JOIN (SELECT name, max(uploaded_at) as ma FROM packages GROUP BY name) p2 "
+            "ON p1.name=p2.name AND p1.uploaded_at=p2.ma "
+            "LEFT JOIN users u ON p1.owner_id=u.id "
+            "ORDER BY p1.name LIMIT 50"
+        ).fetchall()
     packages = [dict(r) for r in rows]
     conn.close()
     return render_template("index.html", packages=packages, q=q, user=current_user())
@@ -174,9 +187,17 @@ def index():
 def dashboard():
     user = current_user()
     conn = get_db()
-    pkgs = conn.execute("SELECT * FROM packages WHERE owner_id = ? ORDER BY name", (user["id"],)).fetchall()
+    # For each package name owned by the user, show the latest version
+    rows = conn.execute(
+        "SELECT p1.* FROM packages p1 "
+        "JOIN (SELECT name, max(uploaded_at) as ma FROM packages WHERE owner_id = ? GROUP BY name) p2 "
+        "ON p1.name=p2.name AND p1.uploaded_at=p2.ma "
+        "WHERE p1.owner_id = ? ORDER BY p1.name",
+        (user["id"], user["id"])
+    ).fetchall()
     conn.close()
-    return render_template("dashboard.html", packages=pkgs, user=user)
+    return render_template("dashboard.html", packages=rows, user=user)
+
 
 @app.route("/delete_package/<name>", methods=["POST"])
 @login_required
@@ -186,28 +207,27 @@ def delete_package(name):
     conn = get_db()
     c = conn.cursor()
 
-    pkg = c.execute(
-        "SELECT * FROM packages WHERE name=?",
+    rows = c.execute(
+        "SELECT DISTINCT owner_id FROM packages WHERE name = ?",
         (name,)
-    ).fetchone()
+    ).fetchall()
 
-    if not pkg:
+    if not rows:
         conn.close()
         abort(404)
 
-    # 权限验证：包 owner
-    if not (pkg["owner_id"] == user["id"]):
+    # if any owner_id differs from current user -> forbidden
+    owner_ids = {r[0] for r in rows}
+    if owner_ids != {user["id"]}:
         conn.close()
         abort(403)
 
-    # 删除 versions 记录
-    c.execute("DELETE FROM versions WHERE package_id = ?", (pkg["id"],))
-    # 删除 package
-    c.execute("DELETE FROM packages WHERE id = ?", (pkg["id"],))
+    # delete package rows
+    c.execute("DELETE FROM packages WHERE name = ?", (name,))
     conn.commit()
     conn.close()
 
-    # 删除磁盘目录 pkgs/<name>
+    # delete disk directory pkgs/<name>
     pkg_dir = os.path.join(PKGS_DIR, name)
     if os.path.exists(pkg_dir):
         shutil.rmtree(pkg_dir, ignore_errors=True)
@@ -269,35 +289,10 @@ def upload():
         conn = get_db()
         c = conn.cursor()
 
-        # 4️⃣ 查询包
-        pkg = c.execute(
-            "SELECT * FROM packages WHERE name=?",
-            (name,)
-        ).fetchone()
-
-        user_id = session["user_id"]
-
-        if pkg:
-            # 5️⃣ 已存在包：检查 owner
-            if pkg["owner_id"] != user_id:
-                conn.close()
-                flash("你不是该包的所有者，无法上传新版本")
-                return redirect(url_for("upload"))
-
-            package_id = pkg["id"]
-
-        else:
-            # 6️⃣ 不存在：创建新包
-            c.execute(
-                "INSERT INTO packages (name, owner_id) VALUES (?, ?)",
-                (name, user_id)
-            )
-            package_id = c.lastrowid
-
-        # 7️⃣ 版本唯一性检查
+        # 4️⃣ 查询包是否已有相同 name & version
         exists = c.execute(
-            "SELECT 1 FROM versions WHERE package_id=? AND version=?",
-            (package_id, version)
+            "SELECT * FROM packages WHERE name = ? AND version = ?",
+            (name, version)
         ).fetchone()
 
         if exists:
@@ -305,7 +300,15 @@ def upload():
             flash("该版本已存在")
             return redirect(url_for("upload"))
 
-        # 8️⃣ 安全路径
+        # 5️⃣ 检查是否已有该包且不是你所有
+        owner_row = c.execute("SELECT owner_id FROM packages WHERE name = ? LIMIT 1", (name,)).fetchone()
+        user_id = session["user_id"]
+        if owner_row and owner_row["owner_id"] != user_id:
+            conn.close()
+            flash("你不是该包的所有者，无法上传新版本")
+            return redirect(url_for("upload"))
+
+        # 6️⃣ 安全路径
         try:
             dest_dir, _, _ = secure_package_path(name, version)
         except ValueError:
@@ -315,7 +318,7 @@ def upload():
 
         os.makedirs(dest_dir, exist_ok=True)
 
-        # 9️⃣ 复制 package.json 所在目录内容
+        # 7️⃣ 复制 package.json 所在目录内容
         pkg_base_dir = os.path.dirname(package_json_path)
         for item in os.listdir(pkg_base_dir):
             s = os.path.join(pkg_base_dir, item)
@@ -325,11 +328,11 @@ def upload():
             else:
                 shutil.copy2(s, d)
 
-        # 🔟 写入版本记录
+        # 8️⃣ 写入 packages 表 (每个版本一行)
         uploaded_at = datetime.utcnow().isoformat() + "Z"
         c.execute(
-            "INSERT INTO versions (package_id, version, filename, uploaded_at) VALUES (?, ?, ?, ?)",
-            (package_id, version, "", uploaded_at)
+            "INSERT INTO packages (name, version, owner_id, filename, uploaded_at) VALUES (?, ?, ?, ?, ?)",
+            (name, version, user_id, "", uploaded_at)
         )
 
         conn.commit()
@@ -347,12 +350,14 @@ def upload():
 def package_view(name):
     # show versions, readme, install command
     conn = get_db()
-    pkg = conn.execute("SELECT * FROM packages WHERE name = ?", (name,)).fetchone()
-    if not pkg:
+    pkg_rows = conn.execute("SELECT * FROM packages WHERE name = ? ORDER BY uploaded_at DESC", (name,)).fetchall()
+    if not pkg_rows:
         conn.close()
         abort(404)
-    versions = conn.execute("SELECT * FROM versions WHERE package_id = ? ORDER BY uploaded_at DESC", (pkg["id"],)).fetchall()
     conn.close()
+
+    versions = [dict(r) for r in pkg_rows]
+
     # find latest README.md in pkgs
     readme_html = None
     latest_ver = None
@@ -372,7 +377,7 @@ def package_view(name):
                 readme_html = "<pre>" + (txt.replace("&", "&amp;").replace("<", "&lt;")) + "</pre>"
             latest_ver = v["version"]
             break
-    return render_template("package.html", package=pkg, versions=versions, readme_html=readme_html, latest_ver=latest_ver, user=current_user())
+    return render_template("package.html", package=versions[0], versions=versions, readme_html=readme_html, latest_ver=latest_ver, user=current_user())
 
 
 @app.route('/pkgs/<path:filename>')
@@ -383,13 +388,11 @@ def public_pkgs(filename):
 @app.route("/api/<name>/versions")
 def api_versions(name):
     conn = get_db()
-    pkg = conn.execute("SELECT * FROM packages WHERE name = ?", (name,)).fetchone()
-    if not pkg:
-        conn.close()
-        return jsonify({"error": "not found"}), 404
-    versions = conn.execute("SELECT version, uploaded_at FROM versions WHERE package_id = ? ORDER BY uploaded_at DESC", (pkg["id"],)).fetchall()
+    rows = conn.execute("SELECT version, uploaded_at FROM packages WHERE name = ? ORDER BY uploaded_at DESC", (name,)).fetchall()
     conn.close()
-    return jsonify([dict(v) for v in versions])
+    if not rows:
+        return jsonify({"error": "not found"}), 404
+    return jsonify([dict(r) for r in rows])
 
 # ---------- simple error handlers ----------
 @app.errorhandler(404)
