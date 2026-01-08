@@ -21,16 +21,6 @@
 </section>
 
 <section class="card">
-  <h3>创建包（仅注册包名，之后仍需上传版本）</h3>
-  <form method="post" action="{{ url_for('create_package') }}">
-    <input type="text" name="name" placeholder="包名 (letters, numbers, - or _)" required>
-    <button type="submit">创建</button>
-  </form>
-</section>
-
-
-
-<section class="card">
   <h3>上传包版本</h3>
   <p class="muted">去 <a href="{{ url_for('upload') }}">上传页面</a> 上传 zip 或 整个文件夹</p>
 </section>

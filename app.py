@@ -187,31 +187,6 @@ def dashboard():
     conn.close()
     return render_template("dashboard.html", packages=pkgs, user=user)
 
-@app.route("/create_package", methods=["POST"])
-@login_required
-def create_package():
-    name = request.form.get("name", "").strip()
-    if not name:
-        flash("请输入包名")
-        return redirect(url_for("dashboard"))
-    # basic name sanity
-    safe = "".join(c for c in name if c.isalnum() or c in "-_").strip()
-    if safe != name:
-        flash("包名只能包含字母数字、- 和 _")
-        return redirect(url_for("dashboard"))
-    conn = get_db()
-    c = conn.cursor()
-    existing = c.execute("SELECT * FROM packages WHERE name = ?", (name,)).fetchone()
-    if existing:
-        flash("包已存在")
-        conn.close()
-        return redirect(url_for("dashboard"))
-    c.execute("INSERT INTO packages (name, owner_id) VALUES (?, ?)", (name, session["user_id"]))
-    conn.commit()
-    conn.close()
-    flash("包已创建。你仍需上传版本文件（zip 或 整个文件夹）")
-    return redirect(url_for("dashboard"))
-
 @app.route("/delete_package/<name>", methods=["POST"])
 @login_required
 def delete_package(name):
@@ -229,8 +204,8 @@ def delete_package(name):
         conn.close()
         abort(404)
 
-    # 权限验证：包 owner 或 admin（dev 模式）
-    if not (pkg["owner_id"] == user["id"] or session.get("github_login") == "admin"):
+    # 权限验证：包 owner
+    if not (pkg["owner_id"] == user["id"]):
         conn.close()
         abort(403)
 
@@ -260,16 +235,7 @@ def upload():
     # handle zip
     tmpdir = None
     try:
-        if zipfile and zipfile.filename:
-            fname = zipfile.filename
-            if not fname.lower().endswith(".zip"):
-                flash("只允许上传 zip 文件作为 zip 上传")
-                return redirect(url_for("upload"))
-            tmpzip = tempfile.NamedTemporaryFile(delete=False, suffix=".zip")
-            zipfile.save(tmpzip.name)
-            tmpdir = extract_zip_to_tmp(tmpzip.name)
-            os.unlink(tmpzip.name)
-        elif files and len(files) > 0:
+        if files and len(files) > 0:
             # save files preserving path info (some browsers provide subpaths in filename)
             tmpdir = tempfile.mkdtemp()
             for f in files:
@@ -300,6 +266,22 @@ def upload():
         if not name or not version:
             flash("package.json 必须包含 name 与 version 字段")
             return redirect(url_for("upload"))
+
+        # basic name sanity
+        safe = "".join(c for c in name if c.isalnum() or c in "-_").strip()
+        if safe != name:
+            flash("包名只能包含字母数字、- 和 _")
+            return redirect(url_for("upload"))
+        conn = get_db()
+        c = conn.cursor()
+        existing = c.execute("SELECT * FROM packages WHERE name = ?", (name,)).fetchone()
+        if existing:
+            flash("包已存在")
+            conn.close()
+            return redirect(url_for("upload"))
+        c.execute("INSERT INTO packages (name, owner_id) VALUES (?, ?)", (name, session["user_id"]))
+        conn.commit()
+        conn.close()
 
         # store to pkgs/<name>/<version> (ensure package exists in DB)
         conn = get_db()
