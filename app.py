@@ -220,9 +220,8 @@ def delete_package(name):
 def upload():
     if request.method == "GET":
         return render_template("upload.html", user=current_user())
-    # POST: accept either a single zip or multiple files (webkitdirectory)
+    # POST: accept multiple files (webkitdirectory)
     files = request.files.getlist("files")
-    zipfile = request.files.get("zipfile")
     # handle zip
     tmpdir = None
     try:
