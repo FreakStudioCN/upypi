@@ -220,88 +220,102 @@ def delete_package(name):
 def upload():
     if request.method == "GET":
         return render_template("upload.html", user=current_user())
-    # POST: accept multiple files (webkitdirectory)
+
     files = request.files.getlist("files")
-    # handle zip
     tmpdir = None
+
     try:
-        if files and len(files) > 0:
-            # save files preserving path info (some browsers provide subpaths in filename)
-            tmpdir = tempfile.mkdtemp()
-            for f in files:
-                # f.filename may include directories like "pkg/package.json" when using webkitdirectory
-                safe_rel = os.path.normpath(f.filename)
-                if safe_rel.startswith(".."):
-                    continue
-                dest = os.path.join(tmpdir, safe_rel)
-                os.makedirs(os.path.dirname(dest), exist_ok=True)
-                f.save(dest)
-        else:
+        if not files:
             flash("没有上传文件")
             return redirect(url_for("upload"))
 
-        # find package.json
+        # 1️⃣ 保存上传目录到临时目录
+        tmpdir = tempfile.mkdtemp()
+        for f in files:
+            safe_rel = os.path.normpath(f.filename)
+            if safe_rel.startswith(".."):
+                continue
+            dest = os.path.join(tmpdir, safe_rel)
+            os.makedirs(os.path.dirname(dest), exist_ok=True)
+            f.save(dest)
+
+        # 2️⃣ 查找 package.json
         package_json_path = None
-        for root, dirs, filenames in os.walk(tmpdir):
+        for root, _, filenames in os.walk(tmpdir):
             if "package.json" in filenames:
                 package_json_path = os.path.join(root, "package.json")
                 break
+
         if not package_json_path:
-            flash("上传包内未找到 package.json")
+            flash("上传目录中未找到 package.json")
             return redirect(url_for("upload"))
-        with open(package_json_path, "r", encoding="utf-8") as fh:
-            pj = json.load(fh)
+
+        with open(package_json_path, "r", encoding="utf-8") as f:
+            pj = json.load(f)
+
         name = pj.get("name")
         version = pj.get("version")
+
         if not name or not version:
-            flash("package.json 必须包含 name 与 version 字段")
+            flash("package.json 必须包含 name 和 version")
             return redirect(url_for("upload"))
 
-        # basic name sanity
-        safe = "".join(c for c in name if c.isalnum() or c in "-_").strip()
-        if safe != name:
+        # 3️⃣ 包名安全检查
+        safe_name = "".join(c for c in name if c.isalnum() or c in "-_")
+        if safe_name != name:
             flash("包名只能包含字母数字、- 和 _")
             return redirect(url_for("upload"))
+
         conn = get_db()
         c = conn.cursor()
-        existing = c.execute("SELECT * FROM packages WHERE name = ?", (name,)).fetchone()
-        if existing:
-            flash("包已存在")
-            conn.close()
-            return redirect(url_for("upload"))
-        c.execute("INSERT INTO packages (name, owner_id) VALUES (?, ?)", (name, session["user_id"]))
-        conn.commit()
-        conn.close()
 
-        # store to pkgs/<name>/<version> (ensure package exists in DB)
-        conn = get_db()
-        c = conn.cursor()
-        pkg = c.execute("SELECT * FROM packages WHERE name = ?", (name,)).fetchone()
-        if not pkg:
-            # optionally create package automatically and assign to uploader
-            c.execute("INSERT OR IGNORE INTO packages (name, owner_id) VALUES (?, ?)", (name, session["user_id"]))
-            conn.commit()
-            pkg = c.execute("SELECT * FROM packages WHERE name = ?", (name,)).fetchone()
-        package_id = pkg["id"]
+        # 4️⃣ 查询包
+        pkg = c.execute(
+            "SELECT * FROM packages WHERE name=?",
+            (name,)
+        ).fetchone()
 
-        # check version uniqueness
-        exists = c.execute("SELECT * FROM versions WHERE package_id = ? AND version = ?", (package_id, version)).fetchone()
+        user_id = session["user_id"]
+
+        if pkg:
+            # 5️⃣ 已存在包：检查 owner
+            if pkg["owner_id"] != user_id:
+                conn.close()
+                flash("你不是该包的所有者，无法上传新版本")
+                return redirect(url_for("upload"))
+
+            package_id = pkg["id"]
+
+        else:
+            # 6️⃣ 不存在：创建新包
+            c.execute(
+                "INSERT INTO packages (name, owner_id) VALUES (?, ?)",
+                (name, user_id)
+            )
+            package_id = c.lastrowid
+
+        # 7️⃣ 版本唯一性检查
+        exists = c.execute(
+            "SELECT 1 FROM versions WHERE package_id=? AND version=?",
+            (package_id, version)
+        ).fetchone()
+
         if exists:
-            flash("该版本已存在")
             conn.close()
+            flash("该版本已存在")
             return redirect(url_for("upload"))
 
-        # safe path and copy
+        # 8️⃣ 安全路径
         try:
-            dest_dir, safe_pkg, safe_ver = secure_package_path(name, version)
+            dest_dir, _, _ = secure_package_path(name, version)
         except ValueError:
-            flash("包名或版本不安全")
             conn.close()
+            flash("包名或版本不安全")
             return redirect(url_for("upload"))
+
         os.makedirs(dest_dir, exist_ok=True)
-        # copy files from tmpdir root to dest_dir (preserve inner structure)
-        # if package.json located in a subfolder, want to copy only that folder contents.
-        # we will copy the directory that contains package.json (so nested zips are handled).
+
+        # 9️⃣ 复制 package.json 所在目录内容
         pkg_base_dir = os.path.dirname(package_json_path)
         for item in os.listdir(pkg_base_dir):
             s = os.path.join(pkg_base_dir, item)
@@ -310,18 +324,20 @@ def upload():
                 shutil.copytree(s, d)
             else:
                 shutil.copy2(s, d)
-        # ensure package.json exists at dest
-        if not os.path.exists(os.path.join(dest_dir, "package.json")):
-            shutil.copy2(package_json_path, os.path.join(dest_dir, "package.json"))
 
-        # record version
+        # 🔟 写入版本记录
         uploaded_at = datetime.utcnow().isoformat() + "Z"
-        c.execute("INSERT INTO versions (package_id, version, filename, uploaded_at) VALUES (?, ?, ?, ?)",
-                  (package_id, version, "", uploaded_at))
+        c.execute(
+            "INSERT INTO versions (package_id, version, filename, uploaded_at) VALUES (?, ?, ?, ?)",
+            (package_id, version, "", uploaded_at)
+        )
+
         conn.commit()
         conn.close()
+
         flash(f"上传成功：{name} {version}")
-        return redirect(url_for("package_view", name=safe_pkg))
+        return redirect(url_for("package_view", name=name))
+
     finally:
         if tmpdir and os.path.exists(tmpdir):
             shutil.rmtree(tmpdir, ignore_errors=True)
