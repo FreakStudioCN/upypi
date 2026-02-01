@@ -33,7 +33,7 @@
                         <h5><i class="bi bi-info-circle"></i> 上传要求：</h5>
                         <ul>
                             <li>必须包含 <code>package.json</code> 文件</li>
-                            <li><code>package.json</code> 必须包含 <code>name</code> 和 <code>version</code> 字段</li>
+                            <li><code>package.json</code> 必须包含 <code>name</code>,<code>version</code>,<code>urls</code>字段</li>
                             <li>建议包含 <code>README.md</code> 文件用于文档</li>
                             <li>包名应该小写，使用连字符分隔单词</li>
                             <li>支持上传整个文件夹（Chrome/Edge浏览器）</li>
@@ -59,6 +59,9 @@
                 <pre><code>{
   "name": "my-micropython-package",
   "version": "1.0.0",
+  "urls": [
+    ["package.py", "src/package.py"]
+  ],
   "description": "我的 MicroPython 包描述",
   "author": "Your Name",
   "license": "MIT",
