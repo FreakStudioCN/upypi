@@ -51,6 +51,9 @@
                     
                     <dt>最新版本</dt>
                     <dd>{{ latest_version }}</dd>
+
+                    <dt>安装最新版本</dt>
+                    <dd> <code>mpremote mip install https://upypi.net/pkgs/{{ package_name }}</code> </dd>
                     
                     <dt>版本数量</dt>
                     <dd>{{ versions|length }}</dd>
@@ -58,8 +61,8 @@
                     <dt>首次发布</dt>
                     <dd>{{ packages[-1].created_at[:10] }}</dd>
                     
-                    <dt>安装方式</dt>
-                    <dd>mpremote mip install https://eoelab.org:1028/pkgs/{{ package_name }}</dd>
+                    <dt>安装当前版本</dt>
+                    <dd> <code>mpremote mip install https://upypi.net/pkgs/{{ package_name }}/{{ latest_version }}</code> </dd>
                 </dl>
             </div>
         </div>
