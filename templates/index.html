@@ -95,19 +95,28 @@
                 <ol>
                     <li>登录您的 GitHub 账户</li>
                     <li>上传包含 <code>package.json</code> 的 MicroPython 包</li>
-                    <li><code>package.json</code> 必须包含 <code>name</code>,<code>version</code>,<code>urls</code>字段</li>
                     <li>其他用户可以通过 <code>mip</code> 工具安装您的包</li>
                 </ol>
-                <h5>示例 package.json:</h5>
+                <h5>package.json必须包含:</h5>
                 <pre><code>{
   "name": "example-package",
   "urls": [
     ["example.py", "src/example.py"]
   ],
-  "version": "1.0.0",
-  "description": "这是一个示例包",
-  "author": "Your Name",
-  "license": "MIT"
+  "version": "1.0.0"
+}</code></pre>
+                    <h5>package.json可选字段</h5>
+                    <pre><code>{
+"_comments": {
+    "chips": "该包支持运行的芯片型号，缺少表示无芯片限制",
+    "fw": "该包依赖的特定固件如ulab、lvgl,缺少表示无固件依赖"
+},
+"description": "这是一个示例包",
+"author": "Your Name",
+"license": "MIT",
+"chips": ["STM32F407", "ESP32"],
+"fw": ["ulab", "lvgl"]
+}
 }</code></pre>
             </div>
         </div>
