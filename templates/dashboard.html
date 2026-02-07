@@ -3,104 +3,165 @@
 {% block title %}我的面板 - MicroPython MIP 仓库{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-8">
-        <h1 class="mb-3">
-            <i class="bi bi-speedometer2"></i> 我的面板
-        </h1>
-        <p class="lead">欢迎回来，{{ user.login }}！</p>
-    </div>
-    <div class="col-md-4 text-end">
+<div class="mb-8 animate-fade-in">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">
+                我的面板
+            </h1>
+            <p class="text-slate-600">欢迎回来，{{ user.login }}！</p>
+        </div>
         <a href="{{ url_for('upload') }}" class="btn btn-success">
-            <i class="bi bi-plus-circle"></i> 上传新包
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+            </svg>
+            上传新包
         </a>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-md-3">
-        <div class="card mb-3">
-            <div class="card-body text-center">
-                <h4>{{ packages|length }}</h4>
-                <p class="text-muted">我的包版本</p>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="card p-6">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="ml-4">
+                <div class="text-2xl font-bold text-slate-900">{{ packages|length }}</div>
+                <div class="text-sm text-slate-600">我的包版本</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card p-6">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="ml-4">
+                <div class="text-2xl font-bold text-slate-900">
+                    {{ packages|selectattr('name')|map(attribute='name')|unique|list|length }}
+                </div>
+                <div class="text-sm text-slate-600">包数量</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card p-6">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </div>
+            </div>
+            <div class="ml-4">
+                <div class="text-2xl font-bold text-slate-900">
+                    {% if packages %}{{ packages[0].created_at[:10] }}{% else %}-{% endif %}
+                </div>
+                <div class="text-sm text-slate-600">最近更新</div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-12">
-        <h3 class="mb-3">我的包版本</h3>
-        
+<div class="card">
+    <div class="card-header">
+        <h2 class="text-lg font-semibold text-slate-900">我的包版本</h2>
+    </div>
+    <div class="card-body">
         {% if packages %}
-        <div class="table-responsive">
-            <table class="table table-hover">
+        <div class="overflow-x-auto">
+            <table class="table">
                 <thead>
                     <tr>
                         <th>包名</th>
                         <th>版本</th>
                         <th>描述</th>
                         <th>上传时间</th>
-                        <th>操作</th>
+                        <th class="text-right">操作</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for package in packages %}
                     <tr>
                         <td>
-                            <strong>
-                                <a href="{{ url_for('package_detail', name=package.name, version=package.version) }}">
-                                    {{ package.name }}
-                                </a>
-                            </strong>
+                            <a href="{{ url_for('package_detail', name=package.name, version=package.version) }}" 
+                               class="font-semibold text-primary-600 hover:text-primary-700">
+                                {{ package.name }}
+                            </a>
                         </td>
                         <td>
-                            <span class="badge bg-primary">{{ package.version }}</span>
+                            <span class="badge badge-primary">{{ package.version }}</span>
                         </td>
                         <td>
                             {% if package.description %}
                                 {{ package.description[:50] }}{% if package.description|length > 50 %}...{% endif %}
                             {% else %}
-                                <span class="text-muted">暂无描述</span>
+                                <span class="text-slate-400">暂无描述</span>
                             {% endif %}
                         </td>
-                        <td>{{ package.created_at[:10] }}</td>
-                        <td>
-                            <div class="btn-group btn-group-sm">
+                        <td class="text-slate-600">{{ package.created_at[:10] }}</td>
+                        <td class="text-right">
+                            <div class="flex items-center justify-end gap-2">
                                 <a href="{{ url_for('package_detail', name=package.name, version=package.version) }}" 
-                                   class="btn btn-outline-primary">
-                                    查看
+                                   class="btn btn-outline text-xs px-3 py-1.5" data-tooltip="查看详情">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                    </svg>
                                 </a>
                                 <a href="{{ url_for('download_package', name=package.name, version=package.version) }}"
-                                   class="btn btn-outline-success">
-                                    下载
+                                   class="btn btn-success text-xs px-3 py-1.5" data-tooltip="下载">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                    </svg>
                                 </a>
-                                <button type="button" class="btn btn-outline-danger" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#deleteModal{{ loop.index }}">
-                                    删除
+                                <button type="button" 
+                                        x-data="{ open: false }"
+                                        @click="open = true"
+                                        class="btn btn-danger text-xs px-3 py-1.5" data-tooltip="删除">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
                                 </button>
-                            </div>
-                            
-                            <!-- 删除确认模态框 -->
-                            <div class="modal fade" id="deleteModal{{ loop.index }}" tabindex="-1">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">确认删除</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                
+                                <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="open = false">
+                                    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+                                        <div class="flex items-center mb-4">
+                                            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                                                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <h3 class="text-lg font-semibold text-slate-900">确认删除</h3>
+                                                <p class="text-sm text-slate-600">此操作无法撤销</p>
+                                            </div>
                                         </div>
-                                        <div class="modal-body">
-                                            <p>确定要删除包 <strong>{{ package.name }}</strong> 的版本 <strong>{{ package.version }}</strong> 吗？</p>
-                                            <p class="text-danger">
-                                                <i class="bi bi-exclamation-triangle"></i>
-                                                此操作将删除此版本的所有文件，且无法恢复！
-                                            </p>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                                        
+                                        <p class="text-slate-700 mb-6">
+                                            确定要删除包 <strong>{{ package.name }}</strong> 的版本 <strong>{{ package.version }}</strong> 吗？
+                                        </p>
+                                        
+                                        <div class="flex justify-end gap-3">
+                                            <button @click="open = false" class="btn btn-secondary">
+                                                取消
+                                            </button>
                                             <form action="{{ url_for('delete_package_version', name=package.name, version=package.version) }}" method="post">
-                                                <button type="submit" class="btn btn-danger">确认删除</button>
+                                                <button type="submit" class="btn btn-danger">
+                                                    确认删除
+                                                </button>
                                             </form>
                                         </div>
                                     </div>
@@ -113,9 +174,18 @@
             </table>
         </div>
         {% else %}
-        <div class="alert alert-info">
-            您还没有上传任何包。
-            <a href="{{ url_for('upload') }}" class="alert-link">点击这里上传第一个包</a>
+        <div class="text-center py-12">
+            <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+            </svg>
+            <h3 class="text-xl font-semibold text-slate-900 mb-2">您还没有上传任何包</h3>
+            <p class="text-slate-600 mb-4">开始上传您的第一个 MicroPython 包吧</p>
+            <a href="{{ url_for('upload') }}" class="btn btn-primary">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                </svg>
+                上传第一个包
+            </a>
         </div>
         {% endif %}
     </div>

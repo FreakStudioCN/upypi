@@ -3,60 +3,124 @@
 {% block title %}上传包 - MicroPython MIP 仓库{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-md-8 mx-auto">
-        <h1 class="mb-4">
-            <i class="bi bi-upload"></i> 上传 MicroPython 包
+<div class="max-w-4xl mx-auto animate-fade-in">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-slate-900 mb-2">
+            上传 MicroPython 包
         </h1>
-        
-        <div class="card">
-            <div class="card-body">
-                <form method="post" enctype="multipart/form-data" id="uploadForm">
-                    <div class="mb-4">
-                        <label for="files" class="form-label">
-                            <strong>选择包文件夹或文件</strong>
-                        </label>
-                        <input class="form-control" type="file" name="files" id="files" 
-                               multiple webkitdirectory directory required>
-                        <div class="form-text">
-                            请选择包文件夹或按住 Ctrl 键选择多个文件。必须包含一个 <code>package.json</code> 文件。
-                            <br>使用 <code>webkitdirectory</code> 属性（Chrome/Edge）可以直接选择文件夹。
+        <p class="text-slate-600">上传您的 MicroPython 包并分享给社区</p>
+    </div>
+    
+    <div class="grid lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2">
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="uploadForm"
+                          x-data="{ 
+                              files: [],
+                              showFileList: false,
+                              init() {
+                                  const fileInput = document.getElementById('files');
+                                  fileInput.addEventListener('change', (e) => {
+                                      this.files = Array.from(e.target.files);
+                                      this.showFileList = this.files.length > 0;
+                                  });
+                              }
+                          }">
+                        <div class="mb-6">
+                            <label for="files" class="block text-sm font-semibold text-slate-900 mb-2">
+                                选择包文件夹或文件
+                            </label>
+                            <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-primary-400 transition-colors"
+                                 x-data="{ dragging: false }"
+                                 @dragover.prevent="dragging = true"
+                                 @dragleave.prevent="dragging = false"
+                                 @drop.prevent="dragging = false; document.getElementById('files').click()"
+                                 :class="{ 'border-primary-400 bg-primary-50': dragging }">
+                                <input type="file" name="files" id="files" 
+                                       multiple webkitdirectory directory required
+                                       class="hidden">
+                                <svg class="w-12 h-12 mx-auto text-slate-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                                </svg>
+                                <p class="text-slate-600 mb-2">
+                                    <span class="text-primary-600 font-medium">点击选择</span> 或拖拽文件到此处
+                                </p>
+                                <p class="text-sm text-slate-500">
+                                    支持上传整个文件夹（Chrome/Edge浏览器）
+                                </p>
+                            </div>
                         </div>
-                    </div>
-                    
-                    <div id="fileList" class="mb-3" style="display: none;">
-                        <h6>已选择文件：</h6>
-                        <ul id="fileItems" class="list-group list-group-flush small"></ul>
-                    </div>
-                    
-                    <div class="alert alert-info">
-                        <h5><i class="bi bi-info-circle"></i> 上传要求：</h5>
-                        <ul>
-                            <li>必须包含 <code>package.json</code> 文件</li>
-                            <li><code>package.json</code> 必须包含 <code>name</code>,<code>version</code>,<code>urls</code>字段</li>
-                            <li>建议包含 <code>README.md</code> 文件用于文档</li>
-                            <li>包名应该小写，使用连字符分隔单词</li>
-                            <li>支持上传整个文件夹（Chrome/Edge浏览器）</li>
-                        </ul>
-                    </div>
-                    
-                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary me-md-2">取消</a>
-                        <button type="submit" class="btn btn-primary" id="submitBtn">
-                            <span class="spinner-border spinner-border-sm d-none" role="status" id="loadingSpinner"></span>
-                            上传包
-                        </button>
-                    </div>
-                </form>
+                        
+                        <div x-show="showFileList" x-transition class="mb-6">
+                            <h6 class="text-sm font-semibold text-slate-900 mb-3">已选择文件：</h6>
+                            <div class="bg-slate-50 rounded-lg p-4 max-h-64 overflow-y-auto">
+                                <ul class="space-y-1">
+                                    <template x-for="(file, index) in files.slice(0, 20)" :key="index">
+                                        <li class="flex items-center text-sm text-slate-700">
+                                            <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            <span x-text="file.webkitRelativePath || file.name"></span>
+                                        </li>
+                                    </template>
+                                </ul>
+                                <p x-show="files.length > 20" class="text-sm text-slate-500 mt-2">
+                                    ... 以及另外 <span x-text="files.length - 20"></span> 个文件
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info mb-6">
+                            <div class="flex">
+                                <svg class="w-5 h-5 mr-3 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                                </svg>
+                                <div>
+                                    <h5 class="font-semibold text-slate-900 mb-2">上传要求：</h5>
+                                    <ul class="list-disc list-inside text-sm space-y-1">
+                                        <li>必须包含 <code class="bg-slate-100 px-1.5 py-0.5 rounded">package.json</code> 文件</li>
+                                        <li><code class="bg-slate-100 px-1.5 py-0.5 rounded">package.json</code> 必须包含 <code class="bg-slate-100 px-1.5 py-0.5 rounded">name</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded">version</code>, <code class="bg-slate-100 px-1.5 py-0.5 rounded">urls</code> 字段</li>
+                                        <li>建议包含 <code class="bg-slate-100 px-1.5 py-0.5 rounded">README.md</code> 文件用于文档</li>
+                                        <li>包名应该小写，使用连字符分隔单词</li>
+                                        <li>支持上传整个文件夹（Chrome/Edge浏览器）</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end gap-3">
+                            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+                                取消
+                            </a>
+                            <button type="submit" class="btn btn-primary"
+                                    x-data="{ loading: false }"
+                                    @click="loading = true"
+                                    :disabled="loading">
+                                <svg x-show="loading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span x-text="loading ? '上传中...' : '上传包'"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
         
-        <div class="card mt-4">
-            <div class="card-header">
-                <i class="bi bi-file-earmark-code"></i> package.json 示例
-            </div>
-            <div class="card-body">
-                <pre><code>{
+        <div class="lg:col-span-1">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="text-lg font-semibold text-slate-900">
+                        <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                        </svg>
+                        package.json 示例
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <pre class="bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto text-sm"><code>{
   "name": "my-micropython-package",
   "version": "1.0.0",
   "urls": [
@@ -71,55 +135,36 @@
     "other-package": ">=1.0.0"
   }
 }</code></pre>
+                </div>
+            </div>
+            
+            <div class="card mt-6">
+                <div class="card-header">
+                    <h3 class="text-lg font-semibold text-slate-900">
+                        <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        可选字段说明
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="space-y-3 text-sm">
+                        <div>
+                            <span class="font-semibold text-slate-900">chips</span>
+                            <p class="text-slate-600">该包支持运行的芯片型号，缺少表示无芯片限制</p>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-slate-900">fw</span>
+                            <p class="text-slate-600">该包依赖的特定固件如ulab、lvgl，缺少表示无固件依赖</p>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-slate-900">dependencies</span>
+                            <p class="text-slate-600">包的依赖关系，使用语义化版本号</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 </div>
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const fileInput = document.getElementById('files');
-    const fileList = document.getElementById('fileList');
-    const fileItems = document.getElementById('fileItems');
-    const uploadForm = document.getElementById('uploadForm');
-    const submitBtn = document.getElementById('submitBtn');
-    const loadingSpinner = document.getElementById('loadingSpinner');
-    
-    fileInput.addEventListener('change', function(e) {
-        const files = e.target.files;
-        fileItems.innerHTML = '';
-        
-        if (files.length > 0) {
-            fileList.style.display = 'block';
-            
-            // 显示前20个文件
-            const maxFiles = Math.min(files.length, 20);
-            for (let i = 0; i < maxFiles; i++) {
-                const li = document.createElement('li');
-                li.className = 'list-group-item';
-                li.textContent = files[i].webkitRelativePath || files[i].name;
-                fileItems.appendChild(li);
-            }
-            
-            if (files.length > 20) {
-                const li = document.createElement('li');
-                li.className = 'list-group-item text-muted';
-                li.textContent = `... 以及另外 ${files.length - 20} 个文件`;
-                fileItems.appendChild(li);
-            }
-        } else {
-            fileList.style.display = 'none';
-        }
-    });
-    
-    uploadForm.addEventListener('submit', function() {
-        // 显示加载动画，禁用提交按钮
-        loadingSpinner.classList.remove('d-none');
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> 上传中...';
-    });
-});
-</script>
-{% endblock %}
 {% endblock %}

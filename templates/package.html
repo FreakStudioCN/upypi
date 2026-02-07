@@ -3,136 +3,189 @@
 {% block title %}{{ package_name }} - MicroPython MIP 仓库{% endblock %}
 
 {% block content %}
-<div class="row mb-4">
-    <div class="col-md-8">
-        <h1 class="mb-1">{{ package_name }}</h1>
-        <p class="lead">
+<div class="mb-8 animate-fade-in">
+    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+        <div class="flex-grow">
+            <h1 class="text-3xl font-bold text-slate-900 mb-2">{{ package_name }}</h1>
             {% if current_package.description %}
-                {{ current_package.description }}
+            <p class="text-lg text-slate-600 mb-4">{{ current_package.description }}</p>
             {% endif %}
-        </p>
-        <div class="d-flex align-items-center mb-3">
-            <span class="badge bg-primary me-2">v{{ current_version }}</span>
-            <small class="text-muted me-3">
-                <i class="bi bi-person"></i> {{ current_package.owner_name }}
-            </small>
-            <small class="text-muted">
-                <i class="bi bi-calendar"></i> 更新时间: {{ current_package.created_at[:10] }}
-            </small>
+            <div class="flex flex-wrap items-center gap-4 text-sm text-slate-600">
+                <span class="badge badge-primary text-sm px-3 py-1">v{{ current_version }}</span>
+                <div class="flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    {{ current_package.owner_name }}
+                </div>
+                <div class="flex items-center">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    {{ current_package.created_at[:10] }}
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="col-md-4 text-end">
-        <div class="btn-group">
+        
+        <div class="flex gap-3">
             <a href="{{ url_for('download_package', name=package_name, version=current_version) }}" 
-               class="btn btn-success btn-lg">
-                <i class="bi bi-download"></i> 下载 v{{ current_version }}
+               class="btn btn-success">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                下载 v{{ current_version }}
             </a>
             {% if user and user.id == current_package.owner_id %}
-            <button type="button" class="btn btn-danger btn-lg" 
-                    data-bs-toggle="modal" data-bs-target="#deleteVersionModal">
-                <i class="bi bi-trash"></i> 删除
+            <button type="button" 
+                    x-data="{ open: false }"
+                    @click="open = true"
+                    class="btn btn-danger">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                删除
             </button>
             {% endif %}
         </div>
     </div>
 </div>
 
-<!-- 版本选择器 -->
-<div class="card mb-4">
+<div class="card mb-6">
     <div class="card-body">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-                <h5 class="mb-0">当前查看版本: <span class="badge bg-primary">v{{ current_version }}</span></h5>
-                <small class="text-muted">
+                <h3 class="text-lg font-semibold text-slate-900 mb-1">
+                    当前版本: <span class="badge badge-primary">v{{ current_version }}</span>
+                </h3>
+                <p class="text-sm text-slate-600">
                     {% if current_version == package_versions[0].version %}
-                    (最新版本)
+                    <span class="badge badge-success">最新版本</span>
                     {% endif %}
-                </small>
+                </p>
             </div>
-            <div class="dropdown">
-                <button class="btn btn-outline-primary dropdown-toggle" type="button" 
-                        data-bs-toggle="dropdown" aria-expanded="false">
+            
+            <div x-data="{ open: false }" class="relative">
+                <button @click="open = !open" @click.away="open = false"
+                        class="btn btn-outline">
                     切换版本
+                    <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                    </svg>
                 </button>
-                <ul class="dropdown-menu dropdown-menu-end">
+                
+                <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                     class="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-slate-200 py-1 z-50">
                     {% for pkg in package_versions %}
-                    <li>
-                        <a class="dropdown-item {% if pkg.version == current_version %}active{% endif %}" 
-                           href="{{ url_for('package_detail', name=package_name, version=pkg.version) }}">
-                            v{{ pkg.version }}
-                            {% if loop.first %}<span class="badge bg-success ms-2">最新</span>{% endif %}
-                            <br>
-                            <small class="text-muted">{{ pkg.created_at[:10] }}</small>
-                        </a>
-                    </li>
+                    <a href="{{ url_for('package_detail', name=package_name, version=pkg.version) }}" 
+                       class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 {% if pkg.version == current_version %}bg-primary-50 text-primary-700{% endif %}">
+                        <div class="flex items-center justify-between">
+                            <span>v{{ pkg.version }}</span>
+                            {% if loop.first %}
+                            <span class="badge badge-success text-xs">最新</span>
+                            {% endif %}
+                        </div>
+                        <div class="text-xs text-slate-500">{{ pkg.created_at[:10] }}</div>
+                    </a>
                     {% endfor %}
-                </ul>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <!-- 左侧信息栏 -->
-    <div class="col-md-3">
-        <div class="card mb-3">
+<div class="grid lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-1 space-y-6">
+        <div class="card">
             <div class="card-header">
-                <i class="bi bi-info-circle"></i> 包信息
+                <h3 class="text-lg font-semibold text-slate-900">
+                    <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    包信息
+                </h3>
             </div>
-            <div class="card-body">
-                <dl>
-                    <dt>所有者</dt>
-                    <dd>{{ current_package.owner_name }}</dd>
-                    
-                    <dt>当前版本</dt>
-                    <dd>{{ current_version }}</dd>
-
-                    <dt>本地安装当前版本</dt>
-                    <dd> 
-                        <div class="mb-2">
-                            <code class="install-cmd">mpremote mip install https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}</code>
-                        </div>
-                        <small class="text-muted">点击代码块选择文本，然后手动复制</small>
-                    </dd>
-
-                    <dt>远程安装当前版本</dt>
-                    <dd>
-                        <div class="mb-2">
-                            <code class="install-cmd">mip.install("https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}")</code>
-                        </div>
-                        <small class="text-muted">点击代码块选择文本，然后手动复制</small>
-                    </dd>
-
-                    <dt>版本数量</dt>
-                    <dd>{{ package_versions|length }}</dd>
-                    
-                    <dt>首次发布</dt>
-                    <dd>{{ package_versions[-1].created_at[:10] }}</dd>
-                </dl>
+            <div class="card-body space-y-4">
+                <div>
+                    <div class="text-sm font-medium text-slate-600 mb-1">所有者</div>
+                    <div class="text-slate-900">{{ current_package.owner_name }}</div>
+                </div>
+                
+                <div>
+                    <div class="text-sm font-medium text-slate-600 mb-1">当前版本</div>
+                    <div class="text-slate-900">{{ current_version }}</div>
+                </div>
+                
+                <div>
+                    <div class="text-sm font-medium text-slate-600 mb-1">版本数量</div>
+                    <div class="text-slate-900">{{ package_versions|length }}</div>
+                </div>
+                
+                <div>
+                    <div class="text-sm font-medium text-slate-600 mb-1">首次发布</div>
+                    <div class="text-slate-900">{{ package_versions[-1].created_at[:10] }}</div>
+                </div>
             </div>
         </div>
         
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-tags"></i> 所有版本
+                <h3 class="text-lg font-semibold text-slate-900">
+                    <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    安装命令
+                </h3>
+            </div>
+            <div class="card-body space-y-4">
+                <div>
+                    <div class="text-sm font-medium text-slate-600 mb-2">本地安装</div>
+                    <code class="install-cmd text-xs"
+                          onclick="upypi.copyToClipboard(this.textContent, this)">
+                        mpremote mip install https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}
+                    </code>
+                </div>
+                
+                <div>
+                    <div class="text-sm font-medium text-slate-600 mb-2">远程安装</div>
+                    <code class="install-cmd text-xs"
+                          onclick="upypi.copyToClipboard(this.textContent, this)">
+                        mip.install("https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}")
+                    </code>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3 class="text-lg font-semibold text-slate-900">
+                    <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                    所有版本
+                </h3>
             </div>
             <div class="card-body p-0">
-                <div class="list-group list-group-flush">
+                <div class="divide-y divide-slate-100">
                     {% for pkg in package_versions %}
                     <a href="{{ url_for('package_detail', name=package_name, version=pkg.version) }}" 
-                       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if pkg.version == current_version %}active{% endif %}">
-                        <div>
-                            <span>v{{ pkg.version }}</span>
-                            {% if loop.first %}
-                            <span class="badge bg-success ms-1">最新</span>
-                            {% endif %}
-                        </div>
-                        <div>
-                            <small class="text-muted">{{ pkg.created_at[:10] }}</small>
-                            <a href="{{ url_for('download_package', name=package_name, version=pkg.version) }}" 
-                               class="btn btn-sm btn-outline-success ms-2 {% if pkg.version == current_version %}btn-light{% endif %}">
-                                <i class="bi bi-download"></i>
-                            </a>
+                       class="block px-4 py-3 hover:bg-slate-50 {% if pkg.version == current_version %}bg-primary-50{% endif %}">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="font-medium text-slate-900">v{{ pkg.version }}</span>
+                                {% if loop.first %}
+                                <span class="badge badge-success text-xs ml-2">最新</span>
+                                {% endif %}
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-slate-600">{{ pkg.created_at[:10] }}</span>
+                                <a href="{{ url_for('download_package', name=package_name, version=pkg.version) }}" 
+                                   class="text-primary-600 hover:text-primary-700"
+                                   @click.stop>
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                    </svg>
+                                </a>
+                            </div>
                         </div>
                     </a>
                     {% endfor %}
@@ -141,15 +194,19 @@
         </div>
     </div>
     
-    <!-- 右侧内容区 -->
-    <div class="col-md-9">
+    <div class="lg:col-span-2 space-y-6">
         {% if readme_content %}
-        <div class="card mb-4">
+        <div class="card">
             <div class="card-header">
-                <i class="bi bi-file-earmark-text"></i> README (v{{ current_version }})
+                <h3 class="text-lg font-semibold text-slate-900">
+                    <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    README (v{{ current_version }})
+                </h3>
             </div>
             <div class="card-body">
-                <div class="markdown-content readme-content">
+                <div class="markdown-content">
                     {{ readme_content|safe }}
                 </div>
             </div>
@@ -158,12 +215,17 @@
         
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-file-earmark-code"></i> 文件列表 (v{{ current_version }})
+                <h3 class="text-lg font-semibold text-slate-900">
+                    <svg class="w-5 h-5 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                    文件列表 (v{{ current_version }})
+                </h3>
             </div>
             <div class="card-body">
                 {% if files %}
-                <div class="table-responsive">
-                    <table class="table table-sm table-hover">
+                <div class="overflow-x-auto">
+                    <table class="table">
                         <thead>
                             <tr>
                                 <th>文件名</th>
@@ -175,31 +237,43 @@
                             {% for file in files %}
                             <tr>
                                 <td>
-                                    {% if file.is_package_json %}
-                                        <i class="bi bi-file-text text-success"></i>
-                                    {% elif file.is_readme %}
-                                        <i class="bi bi-file-earmark-text text-primary"></i>
-                                    {% elif file.is_main %}
-                                        <i class="bi bi-file-code text-warning"></i>
-                                    {% elif file.name.endswith('.py') %}
-                                        <i class="bi bi-file-code"></i>
-                                    {% else %}
-                                        <i class="bi bi-file-earmark"></i>
-                                    {% endif %}
-                                    {{ file.name }}
+                                    <div class="flex items-center">
+                                        {% if file.is_package_json %}
+                                            <svg class="w-4 h-4 mr-2 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                        {% elif file.is_readme %}
+                                            <svg class="w-4 h-4 mr-2 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                        {% elif file.is_main %}
+                                            <svg class="w-4 h-4 mr-2 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                                            </svg>
+                                        {% elif file.name.endswith('.py') %}
+                                            <svg class="w-4 h-4 mr-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+                                            </svg>
+                                        {% else %}
+                                            <svg class="w-4 h-4 mr-2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                        {% endif %}
+                                        <span class="text-slate-900">{{ file.name }}</span>
+                                    </div>
                                 </td>
-                                <td><small class="text-muted">{{ file.size }}</small></td>
+                                <td class="text-slate-600 text-sm">{{ file.size }}</td>
                                 <td>
                                     {% if file.is_package_json %}
-                                        <span class="badge bg-success">配置</span>
+                                        <span class="badge badge-success">配置</span>
                                     {% elif file.is_readme %}
-                                        <span class="badge bg-primary">文档</span>
+                                        <span class="badge badge-primary">文档</span>
                                     {% elif file.is_main %}
-                                        <span class="badge bg-warning">主文件</span>
+                                        <span class="badge badge-warning">主文件</span>
                                     {% elif file.name.endswith('.py') %}
-                                        <span class="badge bg-info">Python</span>
+                                        <span class="badge badge-info">Python</span>
                                     {% else %}
-                                        <span class="badge bg-secondary">文件</span>
+                                        <span class="badge badge-secondary">文件</span>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -208,108 +282,98 @@
                     </table>
                 </div>
                 {% if files|length >= 20 %}
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle"></i> 只显示前 20 个文件
+                <div class="alert alert-info mt-4">
+                    <svg class="w-5 h-5 mr-2 flex-shrink-0 inline" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                    </svg>
+                    只显示前 20 个文件
                 </div>
                 {% endif %}
                 {% else %}
-                <p class="text-muted">此版本暂无文件信息</p>
+                <p class="text-slate-600 text-center py-8">此版本暂无文件信息</p>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- 删除版本确认模态框 -->
 {% if user and user.id == current_package.owner_id %}
-<div class="modal fade" id="deleteVersionModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">删除确认</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<div x-data="{ open: false, deleteOption: 'current' }" x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="open = false">
+    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+        <div class="flex items-center mb-4">
+            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
             </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <h6>选择删除操作:</h6>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="radio" name="deleteOption" 
-                               id="deleteCurrentVersion" value="current" checked>
-                        <label class="form-check-label" for="deleteCurrentVersion">
-                            仅删除当前版本 (v{{ current_version }})
-                        </label>
+            <div>
+                <h3 class="text-lg font-semibold text-slate-900">删除确认</h3>
+                <p class="text-sm text-slate-600">此操作无法撤销</p>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <h6 class="text-sm font-semibold text-slate-900 mb-3">选择删除操作:</h6>
+            <div class="space-y-2">
+                <label class="flex items-center p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"
+                       :class="{ 'border-primary-500 bg-primary-50': deleteOption === 'current' }">
+                    <input type="radio" name="deleteOption" value="current" x-model="deleteOption" class="mr-3">
+                    <div>
+                        <div class="font-medium text-slate-900">仅删除当前版本</div>
+                        <div class="text-sm text-slate-600">v{{ current_version }}</div>
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="deleteOption" 
-                               id="deleteAllVersions" value="all">
-                        <label class="form-check-label" for="deleteAllVersions">
-                            删除整个包 (所有 {{ package_versions|length }} 个版本)
-                        </label>
+                </label>
+                
+                <label class="flex items-center p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"
+                       :class="{ 'border-primary-500 bg-primary-50': deleteOption === 'all' }">
+                    <input type="radio" name="deleteOption" value="all" x-model="deleteOption" class="mr-3">
+                    <div>
+                        <div class="font-medium text-slate-900">删除整个包</div>
+                        <div class="text-sm text-slate-600">所有 {{ package_versions|length }} 个版本</div>
                     </div>
-                </div>
-                
-                <div id="currentVersionWarning" class="alert alert-warning">
-                    <p>确定要删除包 <strong>{{ package_name }}</strong> 的版本 <strong>v{{ current_version }}</strong> 吗？</p>
-                    <p class="mb-0">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        此操作将删除此版本的所有文件，且无法恢复！
-                    </p>
-                </div>
-                
-                <div id="allVersionsWarning" class="alert alert-danger" style="display: none;">
-                    <p>确定要删除包 <strong>{{ package_name }}</strong> 的所有版本吗？</p>
-                    <p class="mb-0">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                        此操作将删除包的所有版本和文件，且无法恢复！
-                    </p>
-                </div>
+                </label>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                
-                <!-- 删除当前版本的表单 -->
-                <form id="deleteCurrentForm" action="{{ url_for('delete_package_version', name=package_name, version=current_version) }}" method="post">
-                    <button type="submit" class="btn btn-warning">删除当前版本</button>
-                </form>
-                
-                <!-- 删除所有版本的表单 -->
-                <form id="deleteAllForm" action="{{ url_for('delete_package_all', name=package_name) }}" method="post" style="display: none;">
-                    <button type="submit" class="btn btn-danger">删除所有版本</button>
-                </form>
-            </div>
+        </div>
+        
+        <div x-show="deleteOption === 'current'" class="alert alert-warning mb-6">
+            <p>确定要删除包 <strong>{{ package_name }}</strong> 的版本 <strong>v{{ current_version }}</strong> 吗？</p>
+            <p class="mb-0">
+                <svg class="w-4 h-4 mr-1 inline" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                此操作将删除此版本的所有文件，且无法恢复！
+            </p>
+        </div>
+        
+        <div x-show="deleteOption === 'all'" class="alert alert-danger mb-6">
+            <p>确定要删除包 <strong>{{ package_name }}</strong> 的所有版本吗？</p>
+            <p class="mb-0">
+                <svg class="w-4 h-4 mr-1 inline" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
+                </svg>
+                此操作将删除包的所有版本和文件，且无法恢复！
+            </p>
+        </div>
+        
+        <div class="flex justify-end gap-3">
+            <button @click="open = false" class="btn btn-secondary">
+                取消
+            </button>
+            
+            <form x-show="deleteOption === 'current'" action="{{ url_for('delete_package_version', name=package_name, version=current_version) }}" method="post">
+                <button type="submit" class="btn btn-warning">
+                    删除当前版本
+                </button>
+            </form>
+            
+            <form x-show="deleteOption === 'all'" action="{{ url_for('delete_package_all', name=package_name) }}" method="post">
+                <button type="submit" class="btn btn-danger">
+                    删除所有版本
+                </button>
+            </form>
         </div>
     </div>
 </div>
 {% endif %}
-{% endblock %}
-
-{% block scripts %}
-<script>
-// 删除选项切换
-document.addEventListener('DOMContentLoaded', function() {
-    const deleteRadios = document.querySelectorAll('input[name="deleteOption"]');
-    const currentVersionWarning = document.getElementById('currentVersionWarning');
-    const allVersionsWarning = document.getElementById('allVersionsWarning');
-    const deleteCurrentForm = document.getElementById('deleteCurrentForm');
-    const deleteAllForm = document.getElementById('deleteAllForm');
-    
-    if (deleteRadios.length > 0) {
-        deleteRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.value === 'current') {
-                    currentVersionWarning.style.display = 'block';
-                    allVersionsWarning.style.display = 'none';
-                    deleteCurrentForm.style.display = 'block';
-                    deleteAllForm.style.display = 'none';
-                } else {
-                    currentVersionWarning.style.display = 'none';
-                    allVersionsWarning.style.display = 'block';
-                    deleteCurrentForm.style.display = 'none';
-                    deleteAllForm.style.display = 'block';
-                }
-            });
-        });
-    }
-});
-</script>
 {% endblock %}
