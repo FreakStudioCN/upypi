@@ -733,6 +733,11 @@ def search():
                          results=results,
                          user=get_current_user())
 
+@app.route('/pkgs/<path:filename>')
+def serve_packages(filename):
+    """提供包文件的静态访问"""
+    return send_from_directory('pkgs', filename)
+
 # ---------- 错误处理 ----------
 @app.errorhandler(404)
 def page_not_found(e):
