@@ -260,7 +260,7 @@ def favicon():
     return '', 204  # No Content
     #在 static 文件夹中放置一个 favicon.ico 文件 return send_from_directory('static', 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
-@app.route('/login')
+@app.route('/login', strict_slashes=False)
 def login():
     """GitHub OAuth 登录"""
     state = os.urandom(16).hex()
@@ -275,7 +275,7 @@ def login():
     
     return redirect(auth_url)
 
-@app.route('/callback')
+@app.route('/callback', strict_slashes=False)
 def callback():
     """GitHub OAuth 回调"""
     code = request.args.get('code')
@@ -353,14 +353,14 @@ def callback():
     flash(f'欢迎回来，{login_name}!', 'success')
     return redirect(url_for('dashboard'))
 
-@app.route('/logout')
+@app.route('/logout', strict_slashes=False)
 def logout():
     """退出登录"""
     session.clear()
     flash('已成功退出登录', 'success')
     return redirect(url_for('index'))
 
-@app.route('/dashboard')
+@app.route('/dashboard', strict_slashes=False)
 @login_required
 def dashboard():
     """用户仪表板"""
@@ -379,7 +379,7 @@ def dashboard():
                          user=user,
                          packages=user_packages)
 
-@app.route('/upload', methods=['GET', 'POST'])
+@app.route('/upload', methods=['GET', 'POST'], strict_slashes=False)
 @login_required
 def upload():
     """上传包"""
@@ -575,7 +575,7 @@ def markdown_filter(text):
     """Jinja2 模板过滤器：将 markdown 转换为 HTML"""
     return render_markdown(text)
 
-@app.route('/pkgs/<name>')
+@app.route('/pkgs/<name>', strict_slashes=False)
 def package_detail(name):
     """包详情页面"""
     conn = get_db()
@@ -622,7 +622,7 @@ def package_detail(name):
                          files=files,
                          user=get_current_user())
 
-@app.route('/pkgs/<name>/delete', methods=['POST'])
+@app.route('/pkgs/<name>/delete', methods=['POST'], strict_slashes=False)
 @login_required
 def delete_package_route(name):
     """删除包"""
@@ -646,7 +646,7 @@ def delete_package_route(name):
     flash(f'包 {name} 已成功删除', 'success')
     return redirect(url_for('dashboard'))
 
-@app.route('/pkgs/<name>/<version>/download')
+@app.route('/pkgs/<name>/<version>/download', strict_slashes=False)
 def download_package(name, version):
     """下载指定版本的包"""
     # 确定要下载的目录
@@ -706,7 +706,7 @@ def download_package(name, version):
         app.logger.error(f'创建下载文件失败: {str(e)}')
         abort(500)
 
-@app.route('/search')
+@app.route('/search', strict_slashes=False)
 def search():
     """搜索包"""
     query = request.args.get('q', '').strip()
