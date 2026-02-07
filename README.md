@@ -3,15 +3,11 @@
 ## 项目概述
 
 ## 运行项目
+1. 安装依赖：apt install nginx python3-flask python3-requests python3-markdown python3-gunicorn python3-dotenv
+2. gunicorn -w 2 -k gthread --threads 4 -b 127.0.0.1:5000 app:app
 
-1. 本地运行：
-    1. 安装依赖：pip install Flask requests markdown
-    2. python app.py
-2. 容器运行（推荐）： 
-    1. 自行准备tls证书（或者手动修改app.py）
-    2. docker run -p 8080:443 -v tls:/tls -v pkgs:/upypi/pkgs -v db:/upypi/db codeberg.org/eoelab/cenv:upypi
-    3. 注意持久化目录为`/upypi/db`，`/upypi/pkgs`
-
+## 注意
+1. 生产力环境要提前准备证书并准备好nginx服务器，样例配置参考nginx-sample.conf
 
 ## 项目演示
 

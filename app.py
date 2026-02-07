@@ -12,11 +12,10 @@ from markdown.extensions.extra import ExtraExtension
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort
 import requests
 
-# 配置
-GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID')
-GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET')
-FLASK_SECRET = os.getenv('FLASK_SECRET')
+from dotenv import load_dotenv
 
+# 导入密钥
+load_dotenv()
 if not GITHUB_CLIENT_ID:
     raise RuntimeError("GITHUB_CLIENT_ID is not set in the environment.")
 if not GITHUB_CLIENT_SECRET:
@@ -732,11 +731,6 @@ def search():
                          results=results,
                          user=get_current_user())
 
-@app.route('/pkgs/<path:filename>')
-def serve_packages(filename):
-    """提供包文件的静态访问"""
-    return send_from_directory('pkgs', filename)
-
 # ---------- 错误处理 ----------
 @app.errorhandler(404)
 def page_not_found(e):
@@ -751,4 +745,4 @@ if __name__ == '__main__':
     init_db()
     
     # 运行应用
-    app.run(ssl_context=('/tls/cert.crt', '/tls/cert.key'), host="0.0.0.0", port=443)
+    app.run(host="127.0.0.1", port=5000)
