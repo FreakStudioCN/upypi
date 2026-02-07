@@ -67,6 +67,8 @@ def init_db():
     conn.commit()
     conn.close()
 
+init_db()
+
 def get_db():
     """获取数据库连接"""
     conn = sqlite3.connect('db/db.sqlite3')
@@ -741,8 +743,5 @@ def internal_server_error(e):
     return render_template('500.html', user=get_current_user()), 500
 
 if __name__ == '__main__':
-    # 初始化数据库
-    init_db()
-    
     # 运行应用
     app.run(host="127.0.0.1", port=5000)
