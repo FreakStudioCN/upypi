@@ -12,10 +12,10 @@ from markdown.extensions.extra import ExtraExtension
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort
 import requests
 
-from dotenv import load_dotenv
-
-# 导入密钥
-load_dotenv()
+# 配置
+GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID')
+GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET')
+FLASK_SECRET = os.getenv('FLASK_SECRET')
 if not GITHUB_CLIENT_ID:
     raise RuntimeError("GITHUB_CLIENT_ID is not set in the environment.")
 if not GITHUB_CLIENT_SECRET:
