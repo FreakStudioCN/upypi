@@ -25,6 +25,7 @@ if not FLASK_SECRET:
 
 # 初始化应用
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 app.secret_key = FLASK_SECRET
 
 # ---------- 上下文处理器，为所有模板添加当前时间 ----------
@@ -101,13 +102,10 @@ def get_current_user():
     return user
 
 def save_package_files(package_name, version, files):
-    """保存上传的包文件"""
+    """保存上传的包文件到版本目录"""
     # 版本目录
     version_dir = Path('pkgs') / package_name / version
     version_dir.mkdir(parents=True, exist_ok=True)
-    
-    # 包根目录（最新版本）
-    package_root_dir = Path('pkgs') / package_name
     
     # 保存所有文件，处理路径
     for file in files:
@@ -131,41 +129,12 @@ def save_package_files(package_name, version, files):
                 target_version_path = version_dir / rel_path
                 target_version_path.parent.mkdir(parents=True, exist_ok=True)
                 file.save(str(target_version_path))
-                
-                # 如果是第一次保存或需要覆盖，也保存到包根目录（最新版本）
-                if package_root_dir.exists():
-                    # 如果包根目录存在，我们需要更新文件
-                    target_root_path = package_root_dir / rel_path
-                    target_root_path.parent.mkdir(parents=True, exist_ok=True)
-                    # 由于我们可能已经读取了文件内容，需要重新打开文件
-                    file.stream.seek(0)  # 重置文件指针
-                    file.save(str(target_root_path))
-                else:
-                    # 包根目录不存在，先保存到版本目录，稍后复制
-                    pass
-    
-    # 如果包根目录不存在，将版本目录复制到包根目录
-    if not package_root_dir.exists():
-        shutil.copytree(str(version_dir), str(package_root_dir))
-    else:
-        # 包根目录已存在，确保更新了所有文件
-        # 实际上上面的循环已经处理了，但为了安全，我们可以再同步一次
-        for item in version_dir.rglob('*'):
-            if item.is_file():
-                rel_path = item.relative_to(version_dir)
-                target_path = package_root_dir / rel_path
-                if not target_path.exists() or item.stat().st_mtime > target_path.stat().st_mtime:
-                    target_path.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.copy2(item, target_path)
 
 def save_package_files_from_dir(package_name, version, source_dir):
-    """从源目录复制文件到包目录"""
+    """从源目录复制文件到版本目录"""
     # 版本目录
     version_dir = Path('pkgs') / package_name / version
     version_dir.mkdir(parents=True, exist_ok=True)
-    
-    # 包根目录（最新版本）
-    package_root_dir = Path('pkgs') / package_name
     
     # 复制源目录下的所有文件到版本目录
     for item in source_dir.rglob('*'):
@@ -175,18 +144,6 @@ def save_package_files_from_dir(package_name, version, source_dir):
             target_version_path = version_dir / relative_path
             target_version_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(item, target_version_path)
-    
-    # 如果包根目录不存在，将版本目录复制到包根目录
-    if not package_root_dir.exists():
-        shutil.copytree(str(version_dir), str(package_root_dir))
-    else:
-        # 更新包根目录的文件
-        for item in version_dir.rglob('*'):
-            if item.is_file():
-                rel_path = item.relative_to(version_dir)
-                target_path = package_root_dir / rel_path
-                target_path.parent.mkdir(parents=True, exist_ok=True)
-                shutil.copy2(item, target_path)
 
 def delete_package(package_name):
     """删除包及其所有版本"""
@@ -235,17 +192,22 @@ def index():
     """首页"""
     conn = get_db()
     
-    # 获取最新的包
+    # 获取最新的包（按创建时间排序，每个包只取最新版本）
     recent_packages = conn.execute('''
         SELECT p.*, u.login as owner_name 
         FROM packages p 
         JOIN users u ON p.owner_id = u.id 
+        WHERE p.created_at = (
+            SELECT MAX(created_at) 
+            FROM packages p2 
+            WHERE p2.name = p.name
+        )
         ORDER BY p.created_at DESC 
         LIMIT 10
     ''').fetchall()
     
-    # 获取包总数
-    total_packages = conn.execute('SELECT COUNT(*) as count FROM packages').fetchone()['count']
+    # 获取包总数（按名称去重）
+    total_packages = conn.execute('SELECT COUNT(DISTINCT name) as count FROM packages').fetchone()['count']
     
     conn.close()
     
@@ -257,8 +219,7 @@ def index():
 @app.route('/favicon.ico')
 def favicon():
     """处理 favicon 请求，避免 404 错误"""
-    return '', 204  # No Content
-    #在 static 文件夹中放置一个 favicon.ico 文件 return send_from_directory('static', 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+    return '', 204
 
 @app.route('/login', strict_slashes=False)
 def login():
@@ -367,11 +328,19 @@ def dashboard():
     user = get_current_user()
     
     conn = get_db()
+    # 获取用户上传的所有包（按名称分组，显示最新版本）
     user_packages = conn.execute('''
-        SELECT * FROM packages 
-        WHERE owner_id = ? 
-        ORDER BY created_at DESC
-    ''', (user['id'],)).fetchall()
+        SELECT p.*, u.login as owner_name 
+        FROM packages p 
+        JOIN users u ON p.owner_id = u.id 
+        WHERE p.owner_id = ? 
+        AND p.created_at = (
+            SELECT MAX(created_at) 
+            FROM packages p2 
+            WHERE p2.name = p.name AND p2.owner_id = ?
+        )
+        ORDER BY p.created_at DESC
+    ''', (user['id'], user['id'])).fetchall()
     
     conn.close()
     
@@ -408,15 +377,10 @@ def upload():
     
     try:
         # 保存上传的文件到临时目录，去掉最外层目录
-        # 分析所有文件的路径，找到共同的前缀
         file_paths = []
         for file in files:
             if file.filename:
-                # 检查是否有目录分隔符（说明是文件夹上传）
-                if '/' in file.filename or '\\' in file.filename:
-                    file_paths.append(file.filename.replace('\\', '/'))
-                else:
-                    file_paths.append(file.filename)
+                file_paths.append(file.filename.replace('\\', '/'))
         
         if not file_paths:
             flash('没有有效文件', 'error')
@@ -425,7 +389,6 @@ def upload():
         # 找到共同的前缀（最外层目录）
         common_prefix = None
         if all('/' in path for path in file_paths):
-            # 获取所有路径的第一个目录部分
             first_parts = [path.split('/')[0] for path in file_paths]
             if len(set(first_parts)) == 1:
                 common_prefix = first_parts[0] + '/'
@@ -433,16 +396,14 @@ def upload():
         # 保存文件，去掉共同的前缀
         for file in files:
             if file.filename:
-                # 规范化路径分隔符
                 file_path = file.filename.replace('\\', '/')
                 
-                # 去掉共同的前缀
                 if common_prefix and file_path.startswith(common_prefix):
                     rel_path = file_path[len(common_prefix):]
                 else:
                     rel_path = file_path
                 
-                if rel_path:  # 确保不是空路径
+                if rel_path:
                     target_path = temp_dir / rel_path
                     target_path.parent.mkdir(parents=True, exist_ok=True)
                     file.save(str(target_path))
@@ -477,11 +438,11 @@ def upload():
         conn.commit()
         conn.close()
         
-        # 保存包文件
+        # 保存包文件到版本目录
         save_package_files_from_dir(package_name, package_version, temp_dir)
         
         flash(f'包 {package_name} v{package_version} 上传成功!', 'success')
-        return redirect(url_for('package_detail', name=package_name))
+        return redirect(url_for('package_detail', name=package_name, version=package_version))
         
     except Exception as e:
         app.logger.error(f'上传包时出错: {str(e)}')
@@ -492,17 +453,12 @@ def upload():
         if temp_dir.exists():
             shutil.rmtree(str(temp_dir))
 
-
-def get_package_files(package_name, version='latest'):
-    """获取包的文件列表"""
+def get_package_files(package_name, version):
+    """获取指定版本包的文件列表"""
     from pathlib import Path
     
-    if version == 'latest':
-        # 最新版本的文件在包根目录
-        package_dir = Path('pkgs') / package_name
-    else:
-        # 特定版本的文件在版本目录
-        package_dir = Path('pkgs') / package_name / version
+    # 版本目录
+    package_dir = Path('pkgs') / package_name / version
     
     if not package_dir.exists():
         return []
@@ -537,6 +493,28 @@ def get_package_files(package_name, version='latest'):
     except Exception as e:
         app.logger.error(f'获取文件列表失败: {str(e)}')
         return []
+
+def get_latest_version(package_name):
+    """获取包的最新版本"""
+    conn = get_db()
+    latest = conn.execute(
+        'SELECT version FROM packages WHERE name = ? ORDER BY created_at DESC LIMIT 1',
+        (package_name,)
+    ).fetchone()
+    conn.close()
+    
+    return latest['version'] if latest else None
+
+def get_package_readme(package_name, version):
+    """获取指定版本的README内容"""
+    readme_path = Path('pkgs') / package_name / version / 'README.md'
+    if readme_path.exists():
+        try:
+            with open(readme_path, 'r', encoding='utf-8') as f:
+                return f.read()
+        except Exception as e:
+            app.logger.error(f'读取 README.md 失败: {str(e)}')
+    return None
 
 # 添加 markdown 渲染函数
 def render_markdown(content):
@@ -576,12 +554,13 @@ def markdown_filter(text):
     return render_markdown(text)
 
 @app.route('/pkgs/<name>', strict_slashes=False)
-def package_detail(name):
+@app.route('/pkgs/<name>/<version>', strict_slashes=False)
+def package_detail(name, version=None):
     """包详情页面"""
     conn = get_db()
     
-    # 获取包的基本信息
-    package_info = conn.execute('''
+    # 获取包的所有版本信息
+    package_versions = conn.execute('''
         SELECT p.*, u.login as owner_name 
         FROM packages p 
         JOIN users u ON p.owner_id = u.id 
@@ -589,73 +568,128 @@ def package_detail(name):
         ORDER BY p.created_at DESC
     ''', (name,)).fetchall()
     
-    if not package_info:
+    if not package_versions:
         abort(404)
     
-    # 获取所有版本
-    versions = [row['version'] for row in package_info]
-    latest_version = versions[0] if versions else None
+    # 如果没有指定版本，使用最新版本
+    if not version:
+        version = package_versions[0]['version']
+    
+    # 获取指定版本的详细信息
+    current_package = None
+    for pkg in package_versions:
+        if pkg['version'] == version:
+            current_package = pkg
+            break
+    
+    if not current_package:
+        abort(404)
     
     conn.close()
     
-    # 检查是否有 README.md - 现在从包根目录读取
-    readme_content = None
-    readme_path = Path('pkgs') / name / 'README.md'
-    if readme_path.exists():
-        try:
-            with open(readme_path, 'r', encoding='utf-8') as f:
-                markdown_content = f.read()
-                # 渲染 Markdown 为 HTML
-                readme_content = render_markdown(markdown_content)
-        except Exception as e:
-            app.logger.error(f'读取 README.md 失败: {str(e)}')
+    # 获取该版本的README内容
+    readme_content = get_package_readme(name, version)
+    if readme_content:
+        readme_content = render_markdown(readme_content)
     
-    # 获取最新版本的文件列表 - 现在从包根目录获取
-    files = get_package_files(name, 'latest')
+    # 获取该版本的文件列表
+    files = get_package_files(name, version)
     
     return render_template('package.html',
                          package_name=name,
-                         packages=package_info,
-                         versions=versions,
-                         latest_version=latest_version,
+                         current_version=version,
+                         current_package=current_package,
+                         package_versions=package_versions,
                          readme_content=readme_content,
                          files=files,
                          user=get_current_user())
 
-@app.route('/pkgs/<name>/delete', methods=['POST'], strict_slashes=False)
+@app.route('/pkgs/<name>/<version>/delete', methods=['POST'], strict_slashes=False)
 @login_required
-def delete_package_route(name):
-    """删除包"""
+def delete_package_version(name, version):
+    """删除特定版本的包"""
     user = get_current_user()
     
     conn = get_db()
     
-    # 检查包是否存在且用户是否有权限
+    # 检查包版本是否存在且用户是否有权限
     package = conn.execute(
-        'SELECT * FROM packages WHERE name = ? AND owner_id = ?',
-        (name, user['id'])
+        'SELECT * FROM packages WHERE name = ? AND version = ? AND owner_id = ?',
+        (name, version, user['id'])
     ).fetchone()
     
     if not package:
+        flash('包版本不存在或没有删除权限', 'error')
+        return redirect(url_for('package_detail', name=name))
+    
+    # 删除文件系统中的版本目录
+    version_dir = Path('pkgs') / name / version
+    if version_dir.exists():
+        shutil.rmtree(str(version_dir))
+    
+    # 删除数据库中的版本记录
+    conn.execute(
+        'DELETE FROM packages WHERE name = ? AND version = ?',
+        (name, version)
+    )
+    
+    # 检查是否还有其他版本
+    remaining_versions = conn.execute(
+        'SELECT COUNT(*) as count FROM packages WHERE name = ?',
+        (name,)
+    ).fetchone()['count']
+    
+    conn.commit()
+    conn.close()
+    
+    if remaining_versions == 0:
+        # 如果没有其他版本，删除整个包目录
+        package_dir = Path('pkgs') / name
+        if package_dir.exists():
+            shutil.rmtree(str(package_dir))
+        flash(f'包 {name} 的所有版本已删除', 'success')
+        return redirect(url_for('dashboard'))
+    else:
+        flash(f'包 {name} 版本 {version} 已删除', 'success')
+        # 重定向到最新版本
+        latest_version = get_latest_version(name)
+        return redirect(url_for('package_detail', name=name, version=latest_version))
+
+@app.route('/pkgs/<name>/delete', methods=['POST'], strict_slashes=False)
+@login_required
+def delete_package_all(name):
+    """删除包的所有版本"""
+    user = get_current_user()
+    
+    conn = get_db()
+    
+    # 检查用户是否有权限删除这个包的所有版本
+    user_packages = conn.execute(
+        'SELECT * FROM packages WHERE name = ? AND owner_id = ?',
+        (name, user['id'])
+    ).fetchall()
+    
+    if not user_packages:
         flash('包不存在或没有删除权限', 'error')
         return redirect(url_for('dashboard'))
     
-    # 删除包
-    delete_package(name)
+    # 删除文件系统中的包目录
+    package_dir = Path('pkgs') / name
+    if package_dir.exists():
+        shutil.rmtree(str(package_dir))
     
-    flash(f'包 {name} 已成功删除', 'success')
+    # 删除数据库中的所有版本记录
+    conn.execute('DELETE FROM packages WHERE name = ?', (name,))
+    conn.commit()
+    conn.close()
+    
+    flash(f'包 {name} 的所有版本已删除', 'success')
     return redirect(url_for('dashboard'))
 
 @app.route('/pkgs/<name>/<version>/download', strict_slashes=False)
 def download_package(name, version):
     """下载指定版本的包"""
-    # 确定要下载的目录
-    if version == 'latest':
-        # 下载最新版本（包根目录）
-        package_dir = Path('pkgs') / name
-    else:
-        # 下载特定版本
-        package_dir = Path('pkgs') / name / version
+    package_dir = Path('pkgs') / name / version
     
     if not package_dir.exists():
         abort(404)
@@ -716,13 +750,18 @@ def search():
     
     conn = get_db()
     
-    # 使用LIKE进行简单搜索
+    # 使用LIKE进行简单搜索，返回每个包的最新版本
     search_pattern = f'%{query}%'
     results = conn.execute('''
         SELECT p.*, u.login as owner_name 
         FROM packages p 
         JOIN users u ON p.owner_id = u.id 
-        WHERE p.name LIKE ? OR p.description LIKE ?
+        WHERE (p.name LIKE ? OR p.description LIKE ?)
+        AND p.created_at = (
+            SELECT MAX(created_at) 
+            FROM packages p2 
+            WHERE p2.name = p.name
+        )
         ORDER BY p.created_at DESC
     ''', (search_pattern, search_pattern)).fetchall()
     

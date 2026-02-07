@@ -7,32 +7,67 @@
     <div class="col-md-8">
         <h1 class="mb-1">{{ package_name }}</h1>
         <p class="lead">
-            {% if packages[0].description %}
-                {{ packages[0].description }}
+            {% if current_package.description %}
+                {{ current_package.description }}
             {% endif %}
         </p>
         <div class="d-flex align-items-center mb-3">
-            <span class="badge bg-primary me-2">v{{ latest_version }}</span>
+            <span class="badge bg-primary me-2">v{{ current_version }}</span>
             <small class="text-muted me-3">
-                <i class="bi bi-person"></i> {{ packages[0].owner_name }}
+                <i class="bi bi-person"></i> {{ current_package.owner_name }}
             </small>
             <small class="text-muted">
-                <i class="bi bi-calendar"></i> 最后更新: {{ packages[0].created_at[:10] }}
+                <i class="bi bi-calendar"></i> 更新时间: {{ current_package.created_at[:10] }}
             </small>
         </div>
     </div>
     <div class="col-md-4 text-end">
         <div class="btn-group">
-            <a href="{{ url_for('download_package', name=package_name, version=latest_version) }}" 
+            <a href="{{ url_for('download_package', name=package_name, version=current_version) }}" 
                class="btn btn-success btn-lg">
-                <i class="bi bi-download"></i> 下载 v{{ latest_version }}
+                <i class="bi bi-download"></i> 下载 v{{ current_version }}
             </a>
-            {% if user and user.id == packages[0].owner_id %}
+            {% if user and user.id == current_package.owner_id %}
             <button type="button" class="btn btn-danger btn-lg" 
-                    data-bs-toggle="modal" data-bs-target="#deleteModal">
+                    data-bs-toggle="modal" data-bs-target="#deleteVersionModal">
                 <i class="bi bi-trash"></i> 删除
             </button>
             {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- 版本选择器 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-0">当前查看版本: <span class="badge bg-primary">v{{ current_version }}</span></h5>
+                <small class="text-muted">
+                    {% if current_version == package_versions[0].version %}
+                    (最新版本)
+                    {% endif %}
+                </small>
+            </div>
+            <div class="dropdown">
+                <button class="btn btn-outline-primary dropdown-toggle" type="button" 
+                        data-bs-toggle="dropdown" aria-expanded="false">
+                    切换版本
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    {% for pkg in package_versions %}
+                    <li>
+                        <a class="dropdown-item {% if pkg.version == current_version %}active{% endif %}" 
+                           href="{{ url_for('package_detail', name=package_name, version=pkg.version) }}">
+                            v{{ pkg.version }}
+                            {% if loop.first %}<span class="badge bg-success ms-2">最新</span>{% endif %}
+                            <br>
+                            <small class="text-muted">{{ pkg.created_at[:10] }}</small>
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
         </div>
     </div>
 </div>
@@ -47,28 +82,38 @@
             <div class="card-body">
                 <dl>
                     <dt>所有者</dt>
-                    <dd>{{ packages[0].owner_name }}</dd>
+                    <dd>{{ current_package.owner_name }}</dd>
                     
-                    <dt>最新版本</dt>
-                    <dd>{{ latest_version }}</dd>
+                    <dt>当前版本</dt>
+                    <dd>{{ current_version }}</dd>
 
-                    <dt>本地安装最新版本</dt>
-                    <dd> <code>mpremote mip install https://upypi.net/pkgs/{{ package_name }}</code> </dd>
-
-                    <dt>远程安装最新版本</dt>
-                    <dd> <code>mip.install("https://upypi.net/pkgs/{{ package_name }}")</code> </dd>
-
-                    <dt>版本数量</dt>
-                    <dd>{{ versions|length }}</dd>
-                    
-                    <dt>首次发布</dt>
-                    <dd>{{ packages[-1].created_at[:10] }}</dd>
-                    
                     <dt>本地安装当前版本</dt>
-                    <dd> <code>mpremote mip install https://upypi.net/pkgs/{{ package_name }}/{{ latest_version }}</code> </dd>
+                    <dd> 
+                        <div class="mb-2">
+                            <code>mpremote mip install https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}</code>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary copy-btn" 
+                                data-clipboard-text="mpremote mip install https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}">
+                            复制
+                        </button>
+                    </dd>
 
                     <dt>远程安装当前版本</dt>
-                    <dd> <code>mip.install("https://upypi.net/pkgs/{{ package_name }}/{{ latest_version }}")</code> </dd>
+                    <dd>
+                        <div class="mb-2">
+                            <code>mip.install("https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}")</code>
+                        </div>
+                        <button class="btn btn-sm btn-outline-secondary copy-btn" 
+                                data-clipboard-text='mip.install("https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}")'>
+                            复制
+                        </button>
+                    </dd>
+
+                    <dt>版本数量</dt>
+                    <dd>{{ package_versions|length }}</dd>
+                    
+                    <dt>首次发布</dt>
+                    <dd>{{ package_versions[-1].created_at[:10] }}</dd>
                 </dl>
             </div>
         </div>
@@ -77,18 +122,25 @@
             <div class="card-header">
                 <i class="bi bi-tags"></i> 所有版本
             </div>
-            <div class="card-body">
-                <div class="list-group">
-                    {% for version in versions %}
-                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                        <span>v{{ version }}</span>
+            <div class="card-body p-0">
+                <div class="list-group list-group-flush">
+                    {% for pkg in package_versions %}
+                    <a href="{{ url_for('package_detail', name=package_name, version=pkg.version) }}" 
+                       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center {% if pkg.version == current_version %}active{% endif %}">
                         <div>
-                            <a href="{{ url_for('download_package', name=package_name, version=version) }}" 
-                               class="btn btn-sm btn-outline-success">
+                            <span>v{{ pkg.version }}</span>
+                            {% if loop.first %}
+                            <span class="badge bg-success ms-1">最新</span>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <small class="text-muted">{{ pkg.created_at[:10] }}</small>
+                            <a href="{{ url_for('download_package', name=package_name, version=pkg.version) }}" 
+                               class="btn btn-sm btn-outline-success ms-2 {% if pkg.version == current_version %}btn-light{% endif %}">
                                 <i class="bi bi-download"></i>
                             </a>
                         </div>
-                    </div>
+                    </a>
                     {% endfor %}
                 </div>
             </div>
@@ -100,7 +152,7 @@
         {% if readme_content %}
         <div class="card mb-4">
             <div class="card-header">
-                <i class="bi bi-file-earmark-text"></i> README
+                <i class="bi bi-file-earmark-text"></i> README (v{{ current_version }})
             </div>
             <div class="card-body">
                 <div class="markdown-content readme-content">
@@ -112,12 +164,12 @@
         
         <div class="card">
             <div class="card-header">
-                <i class="bi bi-file-earmark-code"></i> 文件列表 (最新版本)
+                <i class="bi bi-file-earmark-code"></i> 文件列表 (v{{ current_version }})
             </div>
             <div class="card-body">
                 {% if files %}
                 <div class="table-responsive">
-                    <table class="table table-sm">
+                    <table class="table table-sm table-hover">
                         <thead>
                             <tr>
                                 <th>文件名</th>
@@ -167,37 +219,121 @@
                 </div>
                 {% endif %}
                 {% else %}
-                <p class="text-muted">暂无文件信息</p>
+                <p class="text-muted">此版本暂无文件信息</p>
                 {% endif %}
             </div>
         </div>
     </div>
 </div>
 
-<!-- 删除确认模态框 -->
-{% if user and user.id == packages[0].owner_id %}
-<div class="modal fade" id="deleteModal" tabindex="-1">
+<!-- 删除版本确认模态框 -->
+{% if user and user.id == current_package.owner_id %}
+<div class="modal fade" id="deleteVersionModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title">确认删除包</h5>
+                <h5 class="modal-title">删除确认</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body">
-                <p>确定要删除包 <strong>{{ package_name }}</strong> 吗？</p>
-                <p class="text-danger">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    此操作将删除包的所有版本和文件，且无法恢复！
-                </p>
+                <div class="mb-3">
+                    <h6>选择删除操作:</h6>
+                    <div class="form-check mb-2">
+                        <input class="form-check-input" type="radio" name="deleteOption" 
+                               id="deleteCurrentVersion" value="current" checked>
+                        <label class="form-check-label" for="deleteCurrentVersion">
+                            仅删除当前版本 (v{{ current_version }})
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="deleteOption" 
+                               id="deleteAllVersions" value="all">
+                        <label class="form-check-label" for="deleteAllVersions">
+                            删除整个包 (所有 {{ package_versions|length }} 个版本)
+                        </label>
+                    </div>
+                </div>
+                
+                <div id="currentVersionWarning" class="alert alert-warning">
+                    <p>确定要删除包 <strong>{{ package_name }}</strong> 的版本 <strong>v{{ current_version }}</strong> 吗？</p>
+                    <p class="mb-0">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        此操作将删除此版本的所有文件，且无法恢复！
+                    </p>
+                </div>
+                
+                <div id="allVersionsWarning" class="alert alert-danger" style="display: none;">
+                    <p>确定要删除包 <strong>{{ package_name }}</strong> 的所有版本吗？</p>
+                    <p class="mb-0">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        此操作将删除包的所有版本和文件，且无法恢复！
+                    </p>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                <form action="{{ url_for('delete_package_route', name=package_name) }}" method="post">
-                    <button type="submit" class="btn btn-danger">确认删除</button>
+                
+                <!-- 删除当前版本的表单 -->
+                <form id="deleteCurrentForm" action="{{ url_for('delete_package_version', name=package_name, version=current_version) }}" method="post">
+                    <button type="submit" class="btn btn-warning">删除当前版本</button>
+                </form>
+                
+                <!-- 删除所有版本的表单 -->
+                <form id="deleteAllForm" action="{{ url_for('delete_package_all', name=package_name) }}" method="post" style="display: none;">
+                    <button type="submit" class="btn btn-danger">删除所有版本</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 复制功能
+    const copyButtons = document.querySelectorAll('.copy-btn');
+    copyButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const text = this.getAttribute('data-clipboard-text');
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = this.textContent;
+                this.textContent = '已复制!';
+                this.classList.add('btn-success');
+                this.classList.remove('btn-outline-secondary');
+                
+                setTimeout(() => {
+                    this.textContent = originalText;
+                    this.classList.remove('btn-success');
+                    this.classList.add('btn-outline-secondary');
+                }, 2000);
+            });
+        });
+    });
+    
+    // 删除选项切换
+    const deleteRadios = document.querySelectorAll('input[name="deleteOption"]');
+    const currentVersionWarning = document.getElementById('currentVersionWarning');
+    const allVersionsWarning = document.getElementById('allVersionsWarning');
+    const deleteCurrentForm = document.getElementById('deleteCurrentForm');
+    const deleteAllForm = document.getElementById('deleteAllForm');
+    
+    deleteRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.value === 'current') {
+                currentVersionWarning.style.display = 'block';
+                allVersionsWarning.style.display = 'none';
+                deleteCurrentForm.style.display = 'block';
+                deleteAllForm.style.display = 'none';
+            } else {
+                currentVersionWarning.style.display = 'none';
+                allVersionsWarning.style.display = 'block';
+                deleteCurrentForm.style.display = 'none';
+                deleteAllForm.style.display = 'block';
+            }
+        });
+    });
+});
+</script>
 {% endblock %}
