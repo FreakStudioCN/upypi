@@ -90,10 +90,10 @@
                     <dt>本地安装当前版本</dt>
                     <dd> 
                         <div class="mb-2">
-                            <code>mpremote mip install https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}</code>
+                            <code id="local-install-cmd">mpremote mip install https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}</code>
                         </div>
                         <button class="btn btn-sm btn-outline-secondary copy-btn" 
-                                data-clipboard-text="mpremote mip install https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}">
+                                data-target="local-install-cmd">
                             复制
                         </button>
                     </dd>
@@ -101,10 +101,10 @@
                     <dt>远程安装当前版本</dt>
                     <dd>
                         <div class="mb-2">
-                            <code>mip.install("https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}")</code>
+                            <code id="remote-install-cmd">mip.install("https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}")</code>
                         </div>
                         <button class="btn btn-sm btn-outline-secondary copy-btn" 
-                                data-clipboard-text='mip.install("https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}")'>
+                                data-target="remote-install-cmd">
                             复制
                         </button>
                     </dd>
@@ -292,25 +292,82 @@
 {% block scripts %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // 复制功能
+    // 复制功能 - 改进版本
     const copyButtons = document.querySelectorAll('.copy-btn');
     copyButtons.forEach(button => {
         button.addEventListener('click', function() {
-            const text = this.getAttribute('data-clipboard-text');
-            navigator.clipboard.writeText(text).then(() => {
+            const targetId = this.getAttribute('data-target');
+            const targetElement = document.getElementById(targetId);
+            
+            if (!targetElement) {
+                console.error('找不到目标元素:', targetId);
+                return;
+            }
+            
+            const textToCopy = targetElement.textContent;
+            
+            // 使用更可靠的复制方法
+            copyToClipboard(textToCopy).then(() => {
+                // 复制成功的反馈
                 const originalText = this.textContent;
                 this.textContent = '已复制!';
-                this.classList.add('btn-success');
                 this.classList.remove('btn-outline-secondary');
+                this.classList.add('btn-success');
                 
                 setTimeout(() => {
                     this.textContent = originalText;
                     this.classList.remove('btn-success');
                     this.classList.add('btn-outline-secondary');
                 }, 2000);
+            }).catch(err => {
+                console.error('复制失败:', err);
+                // 备用方案：手动选择文本并提示用户
+                targetElement.select();
+                if (targetElement.tagName === 'CODE') {
+                    // 对于code元素，需要使用不同的方法
+                    const range = document.createRange();
+                    range.selectNode(targetElement);
+                    window.getSelection().removeAllRanges();
+                    window.getSelection().addRange(range);
+                }
+                alert('无法自动复制，请手动选择并复制文本。');
             });
         });
     });
+    
+    // 通用的复制到剪贴板函数
+    function copyToClipboard(text) {
+        // 方法1：使用现代 Clipboard API
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text);
+        } else {
+            // 方法2：使用 textarea 作为备用
+            return new Promise((resolve, reject) => {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.left = '-999999px';
+                textarea.style.top = '-999999px';
+                document.body.appendChild(textarea);
+                
+                try {
+                    textarea.select();
+                    textarea.setSelectionRange(0, 99999); // 对于移动设备
+                    const successful = document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    
+                    if (successful) {
+                        resolve();
+                    } else {
+                        reject(new Error('复制命令失败'));
+                    }
+                } catch (err) {
+                    document.body.removeChild(textarea);
+                    reject(err);
+                }
+            });
+        }
+    }
     
     // 删除选项切换
     const deleteRadios = document.querySelectorAll('input[name="deleteOption"]');
@@ -319,21 +376,23 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteCurrentForm = document.getElementById('deleteCurrentForm');
     const deleteAllForm = document.getElementById('deleteAllForm');
     
-    deleteRadios.forEach(radio => {
-        radio.addEventListener('change', function() {
-            if (this.value === 'current') {
-                currentVersionWarning.style.display = 'block';
-                allVersionsWarning.style.display = 'none';
-                deleteCurrentForm.style.display = 'block';
-                deleteAllForm.style.display = 'none';
-            } else {
-                currentVersionWarning.style.display = 'none';
-                allVersionsWarning.style.display = 'block';
-                deleteCurrentForm.style.display = 'none';
-                deleteAllForm.style.display = 'block';
-            }
+    if (deleteRadios.length > 0) {
+        deleteRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.value === 'current') {
+                    currentVersionWarning.style.display = 'block';
+                    allVersionsWarning.style.display = 'none';
+                    deleteCurrentForm.style.display = 'block';
+                    deleteAllForm.style.display = 'none';
+                } else {
+                    currentVersionWarning.style.display = 'none';
+                    allVersionsWarning.style.display = 'block';
+                    deleteCurrentForm.style.display = 'none';
+                    deleteAllForm.style.display = 'block';
+                }
+            });
         });
-    });
+    }
 });
 </script>
 {% endblock %}
