@@ -90,23 +90,17 @@
                     <dt>本地安装当前版本</dt>
                     <dd> 
                         <div class="mb-2">
-                            <code id="local-install-cmd">mpremote mip install https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}</code>
+                            <code class="install-cmd">mpremote mip install https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}</code>
                         </div>
-                        <button class="btn btn-sm btn-outline-secondary copy-btn" 
-                                data-clipboard-text="mpremote mip install https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}">
-                            复制
-                        </button>
+                        <small class="text-muted">点击代码块选择文本，然后手动复制</small>
                     </dd>
 
                     <dt>远程安装当前版本</dt>
                     <dd>
                         <div class="mb-2">
-                            <code id="remote-install-cmd">mip.install("https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}")</code>
+                            <code class="install-cmd">mip.install("https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}")</code>
                         </div>
-                        <button class="btn btn-sm btn-outline-secondary copy-btn" 
-                                data-clipboard-text='mip.install("https://upypi.net/pkgs/{{ package_name }}/{{ current_version }}")'>
-                            复制
-                        </button>
+                        <small class="text-muted">点击代码块选择文本，然后手动复制</small>
                     </dd>
 
                     <dt>版本数量</dt>
@@ -287,63 +281,12 @@
     </div>
 </div>
 {% endif %}
-
-<!-- 隐藏的 textarea 用于复制 -->
-<textarea id="copy-helper" style="position: absolute; left: -9999px; opacity: 0;"></textarea>
 {% endblock %}
 
 {% block scripts %}
 <script>
-// 简单的复制功能
+// 删除选项切换
 document.addEventListener('DOMContentLoaded', function() {
-    // 为所有复制按钮添加点击事件
-    document.querySelectorAll('.copy-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const textToCopy = this.getAttribute('data-clipboard-text');
-            if (!textToCopy) {
-                console.error('没有找到要复制的文本');
-                return;
-            }
-            
-            // 使用隐藏的 textarea 来复制文本
-            const copyHelper = document.getElementById('copy-helper');
-            copyHelper.value = textToCopy;
-            copyHelper.select();
-            copyHelper.setSelectionRange(0, 99999); // 对于移动设备
-            
-            try {
-                // 尝试执行复制命令
-                const success = document.execCommand('copy');
-                
-                if (success) {
-                    // 复制成功，显示反馈
-                    const originalText = this.innerHTML;
-                    this.innerHTML = '<i class="bi bi-check"></i> 已复制';
-                    this.classList.remove('btn-outline-secondary');
-                    this.classList.add('btn-success');
-                    
-                    // 2秒后恢复原状
-                    setTimeout(() => {
-                        this.innerHTML = originalText;
-                        this.classList.remove('btn-success');
-                        this.classList.add('btn-outline-secondary');
-                    }, 2000);
-                } else {
-                    // 复制失败，提示用户手动复制
-                    alert('无法自动复制，请手动选择并复制以下文本：\n\n' + textToCopy);
-                }
-            } catch (err) {
-                console.error('复制失败:', err);
-                // 复制失败，提示用户手动复制
-                alert('无法自动复制，请手动选择并复制以下文本：\n\n' + textToCopy);
-            }
-            
-            // 清空 textarea
-            copyHelper.value = '';
-        });
-    });
-    
-    // 删除选项切换
     const deleteRadios = document.querySelectorAll('input[name="deleteOption"]');
     const currentVersionWarning = document.getElementById('currentVersionWarning');
     const allVersionsWarning = document.getElementById('allVersionsWarning');
