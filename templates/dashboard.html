@@ -22,7 +22,7 @@
         <div class="card mb-3">
             <div class="card-body text-center">
                 <h4>{{ packages|length }}</h4>
-                <p class="text-muted">我的包</p>
+                <p class="text-muted">我的包版本</p>
             </div>
         </div>
     </div>
@@ -30,7 +30,7 @@
 
 <div class="row mt-4">
     <div class="col-12">
-        <h3 class="mb-3">我的包</h3>
+        <h3 class="mb-3">我的包版本</h3>
         
         {% if packages %}
         <div class="table-responsive">
@@ -49,7 +49,7 @@
                     <tr>
                         <td>
                             <strong>
-                                <a href="{{ url_for('package_detail', name=package.name) }}">
+                                <a href="{{ url_for('package_detail', name=package.name, version=package.version) }}">
                                     {{ package.name }}
                                 </a>
                             </strong>
@@ -67,7 +67,7 @@
                         <td>{{ package.created_at[:10] }}</td>
                         <td>
                             <div class="btn-group btn-group-sm">
-                                <a href="{{ url_for('package_detail', name=package.name) }}" 
+                                <a href="{{ url_for('package_detail', name=package.name, version=package.version) }}" 
                                    class="btn btn-outline-primary">
                                     查看
                                 </a>
@@ -77,13 +77,13 @@
                                 </a>
                                 <button type="button" class="btn btn-outline-danger" 
                                         data-bs-toggle="modal" 
-                                        data-bs-target="#deleteModal{{ package.id }}">
+                                        data-bs-target="#deleteModal{{ loop.index }}">
                                     删除
                                 </button>
                             </div>
                             
                             <!-- 删除确认模态框 -->
-                            <div class="modal fade" id="deleteModal{{ package.id }}" tabindex="-1">
+                            <div class="modal fade" id="deleteModal{{ loop.index }}" tabindex="-1">
                                 <div class="modal-dialog">
                                     <div class="modal-content">
                                         <div class="modal-header">
@@ -91,12 +91,15 @@
                                             <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                         </div>
                                         <div class="modal-body">
-                                            确定要删除包 <strong>{{ package.name }}</strong> 吗？
-                                            此操作将删除包的所有版本且无法恢复！
+                                            <p>确定要删除包 <strong>{{ package.name }}</strong> 的版本 <strong>{{ package.version }}</strong> 吗？</p>
+                                            <p class="text-danger">
+                                                <i class="bi bi-exclamation-triangle"></i>
+                                                此操作将删除此版本的所有文件，且无法恢复！
+                                            </p>
                                         </div>
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
-                                            <form action="{{ url_for('delete_package_route', name=package.name) }}" method="post">
+                                            <form action="{{ url_for('delete_package_version', name=package.name, version=package.version) }}" method="post">
                                                 <button type="submit" class="btn btn-danger">确认删除</button>
                                             </form>
                                         </div>
