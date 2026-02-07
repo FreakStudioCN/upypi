@@ -328,19 +328,11 @@ def dashboard():
     user = get_current_user()
     
     conn = get_db()
-    # 获取用户上传的所有包（按名称分组，显示最新版本）
     user_packages = conn.execute('''
-        SELECT p.*, u.login as owner_name 
-        FROM packages p 
-        JOIN users u ON p.owner_id = u.id 
-        WHERE p.owner_id = ? 
-        AND p.created_at = (
-            SELECT MAX(created_at) 
-            FROM packages p2 
-            WHERE p2.name = p.name AND p2.owner_id = ?
-        )
-        ORDER BY p.created_at DESC
-    ''', (user['id'], user['id'])).fetchall()
+        SELECT * FROM packages 
+        WHERE owner_id = ? 
+        ORDER BY created_at DESC
+    ''', (user['id'],)).fetchall()
     
     conn.close()
     
