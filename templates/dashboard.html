@@ -126,43 +126,44 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                                     </svg>
                                 </a>
-                                <button type="button" 
-                                        x-data="{ open: false }"
-                                        @click="open = true"
-                                        class="btn btn-danger text-xs px-3 py-1.5" data-tooltip="删除">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                    </svg>
-                                </button>
-                                
-                                <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
-                                     class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="open = false">
-                                    <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
-                                        <div class="flex items-center mb-4">
-                                            <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
-                                                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
-                                                </svg>
+                                <div x-data="{ open: false }">
+                                    <button type="button" 
+                                            @click="open = true"
+                                            class="btn btn-danger text-xs px-3 py-1.5" data-tooltip="删除">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                        </svg>
+                                    </button>
+                                    
+                                    <div x-show="open" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 scale-95" x-transition:enter-end="opacity-100 scale-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 scale-100" x-transition:leave-end="opacity-0 scale-95"
+                                         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" @click.self="open = false">
+                                        <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+                                            <div class="flex items-center mb-4">
+                                                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4">
+                                                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                                                    </svg>
+                                                </div>
+                                                <div>
+                                                    <h3 class="text-lg font-semibold text-slate-900">确认删除</h3>
+                                                    <p class="text-sm text-slate-600">此操作无法撤销</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <h3 class="text-lg font-semibold text-slate-900">确认删除</h3>
-                                                <p class="text-sm text-slate-600">此操作无法撤销</p>
-                                            </div>
-                                        </div>
-                                        
-                                        <p class="text-slate-700 mb-6">
-                                            确定要删除包 <strong>{{ package.name }}</strong> 的版本 <strong>{{ package.version }}</strong> 吗？
-                                        </p>
-                                        
-                                        <div class="flex justify-end gap-3">
-                                            <button @click="open = false" class="btn btn-secondary">
-                                                取消
-                                            </button>
-                                            <form action="{{ url_for('delete_package_version', name=package.name, version=package.version) }}" method="post">
-                                                <button type="submit" class="btn btn-danger">
-                                                    确认删除
+                                            
+                                            <p class="text-slate-700 mb-6">
+                                                确定要删除包 <strong>{{ package.name }}</strong> 的版本 <strong>{{ package.version }}</strong> 吗？
+                                            </p>
+                                            
+                                            <div class="flex justify-end gap-3">
+                                                <button @click="open = false" class="btn btn-secondary">
+                                                    取消
                                                 </button>
-                                            </form>
+                                                <form action="{{ url_for('delete_package_version', name=package.name, version=package.version) }}" method="post">
+                                                    <button type="submit" class="btn btn-danger">
+                                                        确认删除
+                                                    </button>
+                                                </form>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
