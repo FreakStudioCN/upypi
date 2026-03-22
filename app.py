@@ -17,13 +17,13 @@ from flask_babel import Babel, gettext as _
 # 配置
 GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID')
 GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET')
-FLASK_SECRET = os.getenv('FLASK_SECRET')
-if not GITHUB_CLIENT_ID:
-    raise RuntimeError("GITHUB_CLIENT_ID is not set in the environment.")
-if not GITHUB_CLIENT_SECRET:
-    raise RuntimeError("GITHUB_CLIENT_SECRET is not set in the environment.")
-if not FLASK_SECRET:
-    raise RuntimeError("FLASK_SECRET is not set in the environment.")
+FLASK_SECRET = 'abc'#os.getenv('FLASK_SECRET')
+# if not GITHUB_CLIENT_ID:
+#     raise RuntimeError("GITHUB_CLIENT_ID is not set in the environment.")
+# if not GITHUB_CLIENT_SECRET:
+#     raise RuntimeError("GITHUB_CLIENT_SECRET is not set in the environment.")
+# if not FLASK_SECRET:
+#     raise RuntimeError("FLASK_SECRET is not set in the environment.")
 
 # 初始化应用
 app = Flask(__name__)
@@ -257,43 +257,38 @@ def set_language(lang):
         session['language'] = lang
     return redirect(request.referrer or url_for('index'))
 
-@app.route('/favicon.ico')
-def favicon():
-    """处理 favicon 请求，避免 404 错误"""
-    return '', 204
-
 @app.route('/login', strict_slashes=False)
 def login():
     """开发模式：直接登录 test 用户"""
-    # conn = get_db()
-    # conn.execute(
-    #     'INSERT OR IGNORE INTO users (github_id, login, name) VALUES (0,"test","test")'
-    # )
-    # user = conn.execute(
-    #     'SELECT id FROM users WHERE github_id = 0'
-    # ).fetchone()
+    conn = get_db()
+    conn.execute(
+        'INSERT OR IGNORE INTO users (github_id, login, name) VALUES (0,"test","test")'
+    )
+    user = conn.execute(
+        'SELECT id FROM users WHERE github_id = 0'
+    ).fetchone()
 
-    # conn.commit()
-    # conn.close()
+    conn.commit()
+    conn.close()
 
-    # session['user_id'] = user["id"]
-    # session['github_login'] = "test"
+    session['user_id'] = user["id"]
+    session['github_login'] = "test"
 
-    # flash(_('欢迎回来，{}!').format("test"), 'success')
-    # return redirect(url_for('dashboard'))
+    flash(_('欢迎回来，{}!').format("test"), 'success')
+    return redirect(url_for('dashboard'))
 
     """GitHub OAuth 登录"""
-    state = os.urandom(16).hex()
-    session['oauth_state'] = state
-    redirect_uri = url_for('callback', _external=True)
+    # state = os.urandom(16).hex()
+    # session['oauth_state'] = state
+    # redirect_uri = url_for('callback', _external=True)
     
-    auth_url = (f"https://github.com/login/oauth/authorize"
-                f"?client_id={GITHUB_CLIENT_ID}"
-                f"&state={state}"
-                f"&redirect_uri={redirect_uri}"
-                f"&scope=read:user")
+    # auth_url = (f"https://github.com/login/oauth/authorize"
+    #             f"?client_id={GITHUB_CLIENT_ID}"
+    #             f"&state={state}"
+    #             f"&redirect_uri={redirect_uri}"
+    #             f"&scope=read:user")
     
-    return redirect(auth_url)
+    # return redirect(auth_url)
 
 @app.route('/callback', strict_slashes=False)
 def callback():
