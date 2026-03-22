@@ -111,7 +111,7 @@ msgstr "MicroPython Package Repository"
 
 #: templates/base.html:108
 msgid "浏览所有包"
-msgstr ""
+msgstr "All Packages"
 
 #: templates/base.html:112 templates/dashboard.html:3
 #: templates/dashboard.html:9
