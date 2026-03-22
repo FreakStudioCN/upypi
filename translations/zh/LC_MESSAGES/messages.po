@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-03-12 20:49+0000\n"
+"POT-Creation-Date: 2026-03-22 19:14+0000\n"
 "PO-Revision-Date: 2026-03-06 19:32+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh\n"
@@ -18,65 +18,65 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: app.py:95
+#: app.py:115
 msgid "请先登录"
 msgstr ""
 
-#: app.py:305
+#: app.py:318
 msgid "OAuth 认证失败 (state mismatch)"
 msgstr ""
 
-#: app.py:324
+#: app.py:337
 msgid "OAuth token 错误"
 msgstr ""
 
-#: app.py:343
+#: app.py:356
 msgid "GitHub 用户信息获取失败"
 msgstr ""
 
-#: app.py:373
+#: app.py:386
 #, python-brace-format
 msgid "欢迎回来，{}!"
 msgstr ""
 
-#: app.py:380
+#: app.py:393
 msgid "已成功退出登录"
 msgstr ""
 
-#: app.py:427
+#: app.py:501
 msgid "没有选择文件"
 msgstr ""
 
-#: app.py:449
+#: app.py:523
 #, python-format
 msgid "%(name)s 缺少package.json"
 msgstr ""
 
-#: app.py:463
+#: app.py:537
 #, python-format
 msgid "%(name)s %(version)s 已存在"
 msgstr ""
 
-#: app.py:480
+#: app.py:554
 #, python-format
 msgid "%(name)s %(version)s 上传成功"
 msgstr ""
 
-#: app.py:484
+#: app.py:558
 #, python-format
 msgid "%(name)s 上传失败"
 msgstr ""
 
-#: app.py:561
+#: app.py:635
 msgid "包版本不存在或没有删除权限"
 msgstr ""
 
-#: app.py:589
+#: app.py:663
 #, python-brace-format
 msgid "包 {}的所有版本已删除"
 msgstr ""
 
-#: app.py:592
+#: app.py:666
 #, python-brace-format
 msgid "包 {} 版本 {} 已删除"
 msgstr ""
@@ -105,27 +105,32 @@ msgstr ""
 msgid "刷新页面"
 msgstr ""
 
-#: templates/base.html:7 templates/base.html:84 templates/index.html:3
+#: templates/base.html:7 templates/base.html:98 templates/index.html:3
 msgid "MicroPython 包仓库"
 msgstr ""
 
-#: templates/base.html:95 templates/dashboard.html:3 templates/dashboard.html:9
+#: templates/base.html:108
+msgid "浏览所有包"
+msgstr ""
+
+#: templates/base.html:112 templates/dashboard.html:3
+#: templates/dashboard.html:9
 msgid "我的面板"
 msgstr ""
 
-#: templates/base.html:98 templates/dashboard.html:15 templates/upload.html:45
+#: templates/base.html:115 templates/dashboard.html:15 templates/upload.html:45
 msgid "上传包"
 msgstr ""
 
-#: templates/base.html:122
+#: templates/base.html:139
 msgid "仪表板"
 msgstr ""
 
-#: templates/base.html:124
+#: templates/base.html:141
 msgid "退出登录"
 msgstr ""
 
-#: templates/base.html:153
+#: templates/base.html:170
 msgid "MicroPython 包仓库 &copy; 2026 | 联系我们: 1069653183@qq.com"
 msgstr ""
 
@@ -153,7 +158,8 @@ msgstr ""
 msgid "描述"
 msgstr ""
 
-#: templates/dashboard.html:62 templates/index.html:52 templates/search.html:34
+#: templates/dashboard.html:62 templates/index.html:52
+#: templates/packages.html:30 templates/search.html:34
 msgid "暂无描述"
 msgstr ""
 
@@ -195,6 +201,14 @@ msgstr ""
 
 #: templates/index.html:90
 msgid "上传一个包含 package.json 的包"
+msgstr ""
+
+#: templates/index.html:91
+msgid "API搜索可使用：/api/search"
+msgstr ""
+
+#: templates/index.html:92
+msgid "全局索引表：/packages.json"
 msgstr ""
 
 #: templates/package.html:20
@@ -255,6 +269,18 @@ msgstr ""
 
 #: templates/package.html:187
 msgid "确认"
+msgstr ""
+
+#: templates/packages.html:3
+msgid "所有包"
+msgstr ""
+
+#: templates/packages.html:9
+msgid "浏览仓库中的所有 MicroPython 包"
+msgstr ""
+
+#: templates/packages.html:62
+msgid "暂无包"
 msgstr ""
 
 #: templates/search.html:3

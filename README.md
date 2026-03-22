@@ -1,4 +1,4 @@
-[中文版本](./README-zh.md)
+[中文版本](./README_ZH.md)
 # uPyPi: A PyPI-like MicroPython Package Repository
 `uPyPi` is a dedicated package management hub for the MicroPython ecosystem, designed to simplify the discovery, sharing, and deployment of MicroPython libraries and drivers.
 

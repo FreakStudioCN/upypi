@@ -3,7 +3,7 @@ import stat
 import shutil
 import zipfile
 from pathlib import Path
-from functools import wraps
+from functools import wraps, lru_cache
 from datetime import datetime
 
 import json
@@ -131,7 +131,8 @@ def get_current_user():
     
     return user
 
-def get_package_json(folder: Path) -> dict | None:
+@lru_cache(maxsize=1024)
+def get_package_json(folder: Path, mtime: float) -> dict | None:
     path = folder / "package.json"
     if not path.is_file():
         return None
@@ -266,7 +267,8 @@ def index():
 
     for i, pkg in enumerate(recent_packages):
         pkg = dict(pkg)
-        info = get_package_json(Path("pkgs") / pkg["name"] / pkg["version"])
+        path = Path("pkgs") / pkg["name"] / pkg["version"]
+        info = get_package_json(path, path.stat().st_mtime)
         if info:
             pkg.update(info)
         recent_packages[i] = pkg
@@ -417,7 +419,8 @@ def dashboard():
     
     for i, pkg in enumerate(user_packages):
         pkg = dict(pkg)
-        info = get_package_json(Path("pkgs") / pkg["name"] / pkg["version"])
+        path = Path("pkgs") / pkg["name"] / pkg["version"]
+        info = get_package_json(path, path.stat().st_mtime)
         if info:
             pkg.update(info)
         user_packages[i] = pkg
@@ -476,7 +479,8 @@ def packages():
 
     for i, row in enumerate(all_packages):
         pkg = dict(row)
-        info = get_package_json(Path("pkgs") / pkg["name"] / pkg["version"])
+        path = Path("pkgs") / pkg["name"] / pkg["version"]
+        info = get_package_json(path, path.stat().st_mtime)
         if info:
             pkg.update(info)
         all_packages[i] = pkg
@@ -517,7 +521,7 @@ def upload():
 
             unzip(zip_path, extract_dir)
 
-            info = get_package_json(extract_dir)
+            info = get_package_json(extract_dir, extract_dir.stat().st_mtime)
 
             if not info:
                 flash(_('%(name)s 缺少package.json', name=file.filename), 'error')
@@ -588,7 +592,8 @@ def package_detail(name, version=None):
     for pkg in package_versions:
         if pkg['version'] == version:
             current_package = dict(pkg)
-            info = get_package_json(Path("pkgs") / name / version)
+            path = Path("pkgs") / name / version
+            info = get_package_json(path, path.stat().st_mtime)
             if info:
                 current_package.update(info)
             break
@@ -749,7 +754,8 @@ def search():
 
     for i, pkg in enumerate(results):
         pkg = dict(pkg)
-        info = get_package_json(Path("pkgs") / pkg["name"] / pkg["version"])
+        path = Path("pkgs") / pkg["name"] / pkg["version"]
+        info = get_package_json(path, path.stat().st_mtime)
         if info:
             pkg.update(info)
         results[i] = pkg
