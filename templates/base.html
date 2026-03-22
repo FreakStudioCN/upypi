@@ -6,6 +6,13 @@
 
 <title>{% block title %}{% trans %}MicroPython 包仓库{% endtrans %}{% endblock %}</title>
 
+<!-- hreflang -->
+<link rel="alternate" hreflang="en" href="{{ alt_url('en', True) }}">
+<link rel="alternate" hreflang="zh" href="{{ alt_url('zh', True) }}">
+
+<!-- canonical -->
+<link rel="canonical" href="{{ alt_url(g.lang, True) }}">
+
 <!-- icon -->
 <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}">
 <link rel="icon" type="image/png" sizes="32x32" href="{{ url_for('static', filename='favicon-32x32.png') }}">
@@ -114,9 +121,9 @@ document.addEventListener("DOMContentLoaded", function () {
                     </form>
                     <div class="me-3">
                         <div class="btn-group btn-group-sm shadow-sm" role="group">
-                            <a href="{{ url_for('set_language', lang='zh') }}"> <img src="/static/flags/cn.svg" width="16">中文</a>
+                            <a href="{{ alt_url('zh') }}"> <img src="/static/flags/cn.svg" width="16"> 中文</a>
                             <span class="text-muted mx-1">/</span>
-                            <a href="{{ url_for('set_language', lang='en') }}"> <img src="/static/flags/us.svg" width="16">EN</a>
+                            <a href="{{ alt_url('en') }}"> <img src="/static/flags/us.svg" width="16"> English</a>
                         </div>
                     </div>
 

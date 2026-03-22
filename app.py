@@ -11,7 +11,7 @@ import sqlite3
 import requests
 import markdown
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort, jsonify, g
 from flask_babel import Babel, gettext as _
 
 # 配置
@@ -30,20 +30,23 @@ app = Flask(__name__)
 
 app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
 
-app.config['BABEL_DEFAULT_LOCALE'] = 'zh'
+app.config['BABEL_DEFAULT_LOCALE'] = 'en'
 app.config['BABEL_SUPPORTED_LOCALES'] = ['zh', 'en']
 app.config['BABEL_TRANSLATION_DIRECTORIES'] = 'translations'
 
 app.secret_key = FLASK_SECRET
 
-# 初始化Babel
-babel = Babel(app)
+# helper
+def alt_url(lang, external=False):
+    args = dict(request.view_args or {})
+    args['lang'] = lang
+    return url_for(request.endpoint, _external=external, **args)
+app.jinja_env.globals['alt_url'] = alt_url
 
+# 初始化Babel
 def get_locale():
-    if 'language' in session:
-        return session['language']
-    return request.accept_languages.best_match(app.config['BABEL_SUPPORTED_LOCALES'])
-babel.init_app(app, locale_selector=get_locale)
+    return getattr(g, 'lang', 'en')
+babel = Babel(app, locale_selector=get_locale)
 
 # ---------- 数据库初始化 ----------
 def init_db():
@@ -93,7 +96,7 @@ def login_required(f):
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
             flash(_('请先登录'), 'error')
-            return redirect(url_for('login'))
+            return redirect(url_for('login', lang=g.lang))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -215,8 +218,28 @@ def unzip(zip_path, dest):
             with z.open(info) as src, open(target, "wb") as dst:
                 shutil.copyfileobj(src, dst)
 
+@app.url_value_preprocessor
+def pull_lang(endpoint, values):
+    if values is None:
+        return
+    lang = values.pop('lang', None)
+    if lang in app.config['BABEL_SUPPORTED_LOCALES']:
+        g.lang = lang
+    else:
+        g.lang = 'en'
+
+@app.url_defaults
+def add_lang(endpoint, values):
+    if 'lang' in values or not hasattr(g, 'lang'):
+        return
+    values['lang'] = g.lang
+
 # ---------- 路由 ----------
 @app.route('/')
+def root():
+    return redirect('/en/')
+
+@app.route('/<lang>/', strict_slashes=False)
 def index():
     """首页"""
     conn = get_db()
@@ -251,13 +274,7 @@ def index():
                          total_packages=total_packages,
                          user=get_current_user())
 
-@app.route('/language/<lang>')
-def set_language(lang):
-    if lang in app.config['BABEL_SUPPORTED_LOCALES']:
-        session['language'] = lang
-    return redirect(request.referrer or url_for('index'))
-
-@app.route('/login', strict_slashes=False)
+@app.route('/<lang>/login', strict_slashes=False)
 def login():
     """开发模式：直接登录 test 用户"""
     conn = get_db()
@@ -275,7 +292,7 @@ def login():
     session['github_login'] = "test"
 
     flash(_('欢迎回来，{}!').format("test"), 'success')
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('dashboard', lang=g.lang))
 
     """GitHub OAuth 登录"""
     # state = os.urandom(16).hex()
@@ -298,7 +315,7 @@ def callback():
     
     if not code or state != session.get('oauth_state'):
         flash(_('OAuth 认证失败 (state mismatch)'), 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('index', lang=g.lang))
     
     # 交换 code 获取 access_token
     token_resp = requests.post(
@@ -317,7 +334,7 @@ def callback():
     
     if not access_token:
         flash(_('OAuth token 错误'), 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('index', lang=g.lang))
     
     # 获取用户信息
     user_resp = requests.get(
@@ -336,7 +353,7 @@ def callback():
     
     if not github_id:
         flash(_('GitHub 用户信息获取失败'), 'error')
-        return redirect(url_for('index'))
+        return redirect(url_for('index', lang=g.lang))
     
     # 插入或更新用户
     conn = get_db()
@@ -366,16 +383,16 @@ def callback():
     session['github_login'] = login_name
     
     flash(_('欢迎回来，{}!').format(login_name), 'success')
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('dashboard', lang=g.lang))
 
-@app.route('/logout', strict_slashes=False)
+@app.route('/<lang>/logout', strict_slashes=False)
 def logout():
     """退出登录"""
     session.clear()
     flash(_('已成功退出登录'), 'success')
-    return redirect(url_for('index'))
+    return redirect(url_for('index', lang=g.lang))
 
-@app.route('/dashboard', strict_slashes=False)
+@app.route('/<lang>/dashboard', strict_slashes=False)
 @login_required
 def dashboard():
     """用户仪表板"""
@@ -408,7 +425,7 @@ def dashboard():
                          user=user,
                          packages=user_packages)
 
-@app.route('/upload', methods=['GET', 'POST'], strict_slashes=False)
+@app.route('/<lang>/upload', methods=['GET', 'POST'], strict_slashes=False)
 @login_required
 def upload():
     """上传包"""
@@ -480,10 +497,10 @@ def upload():
         finally:
             # 清理临时目录
             shutil.rmtree(temp_dir, ignore_errors=True)
-    return redirect(url_for('dashboard'))
+    return redirect(url_for('dashboard', lang=g.lang))
 
-@app.route('/pkgs/<name>', strict_slashes=False)
-@app.route('/pkgs/<name>/<version>', strict_slashes=False)
+@app.route('/<lang>/pkgs/<name>', strict_slashes=False)
+@app.route('/<lang>/pkgs/<name>/<version>', strict_slashes=False)
 def package_detail(name, version=None):
     """包详情页面"""
     conn = get_db()
@@ -538,7 +555,7 @@ def package_detail(name, version=None):
                          files=files,
                          user=get_current_user())
 
-@app.route('/pkgs/<name>/<version>/delete', methods=['POST'], strict_slashes=False)
+@app.route('/<lang>/pkgs/<name>/<version>/delete', methods=['POST'], strict_slashes=False)
 @login_required
 def delete_package_version(name, version):
     """删除特定版本的包"""
@@ -582,13 +599,13 @@ def delete_package_version(name, version):
         if package_dir.exists():
             shutil.rmtree(str(package_dir))
         flash(_('包 {}的所有版本已删除').format(name), 'success')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard', lang=g.lang))
     else:
         flash(_('包 {} 版本 {} 已删除').format(name, version), 'success')
         # 重定向到最新版本
         return redirect(url_for('package_detail', name=name, version=get_package_versions(name)[0]))
 
-@app.route('/pkgs/<name>/<version>/download', strict_slashes=False)
+@app.route('/<lang>/pkgs/<name>/<version>/download', strict_slashes=False)
 def download_package(name, version):
     """下载指定版本的包"""
     package_dir = Path('pkgs') / name / version
@@ -641,13 +658,13 @@ def download_package(name, version):
         app.logger.error(f'创建下载文件失败: {str(e)}')
         abort(500)
 
-@app.route('/search', strict_slashes=False)
+@app.route('/<lang>/search', strict_slashes=False)
 def search():
     """搜索包"""
     query = request.args.get('q', '').strip()
     
     if not query:
-        return redirect(url_for('index'))
+        return redirect(url_for('index', lang=g.lang))
     
     conn = get_db()
     
