@@ -45,17 +45,17 @@ msgstr "Successfully logged out"
 
 #: app.py:449
 msgid "Git URL不能为空"
-msgstr ""
+msgstr "Git URL cannot be empty"
 
 #: app.py:538
 #, python-format
 msgid "拉取仓库失败: %(msg)s"
-msgstr ""
+msgstr "Failed to clone repository: %(msg)s"
 
 #: app.py:542
 #, python-format
 msgid "提交失败: %(msg)s"
-msgstr ""
+msgstr "Submit failed: %(msg)s"
 
 #: app.py:558
 msgid "没有选择文件"
@@ -208,9 +208,8 @@ msgid "暂无包上传，成为第一个上传者吧！"
 msgstr "No packages uploaded yet. Be the first to upload one!"
 
 #: templates/index.html:87
-#, fuzzy
 msgid "如何使用？"
-msgstr "How to Upload?"
+msgstr "How to Use?"
 
 #: templates/index.html:89
 msgid "登录您的 GitHub 账户"
@@ -346,48 +345,47 @@ msgstr "Required Fields"
 
 #: templates/upload.html:38
 msgid "文件大小不超过 10MiB"
-msgstr ""
+msgstr "File size must not exceed 10MiB"
 
 #: templates/upload.html:55
 msgid "从 Git 仓库提交包"
-msgstr ""
+msgstr "Submit package from Git repository"
 
 #: templates/upload.html:60
 msgid "Git 仓库 URL"
-msgstr ""
+msgstr "Git repository URL"
 
 #: templates/upload.html:67
 msgid "分支（Branch）"
-msgstr ""
+msgstr "Branch"
 
 #: templates/upload.html:74
 msgid "目标文件夹列表（/开头）"
-msgstr ""
+msgstr "Target folder list (start with /)"
 
 #: templates/upload.html:77
 msgid "逗号分隔的路径，空表示整个仓库"
-msgstr ""
+msgstr "Comma-separated paths, leave empty for entire repository"
 
 #: templates/upload.html:81
 msgid "提交要求"
-msgstr ""
+msgstr "Submission requirements"
 
 #: templates/upload.html:83
-#, fuzzy
 msgid "目标文件夹必须包含 package.json 文件"
-msgstr "ZIP must contain package.json file"
+msgstr "Target folder must contain package.json"
 
 #: templates/upload.html:85
 msgid "总文件大小不超过 10MiB"
-msgstr ""
+msgstr "Total file size must not exceed 10MiB"
 
 #: templates/upload.html:86
 msgid "目标文件夹不包含符号链接"
-msgstr ""
+msgstr "Target folder must not contain symlinks"
 
 #: templates/upload.html:95
 msgid "提交包"
-msgstr ""
+msgstr "Submit package"
 
 #: templates/upload.html:105
 msgid "ZIP结构"
