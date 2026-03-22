@@ -4,6 +4,7 @@ import shutil
 import zipfile
 from pathlib import Path
 from functools import wraps
+from datetime import datetime
 
 import json
 import sqlite3
@@ -11,7 +12,7 @@ import sqlite3
 import requests
 import markdown
 
-from flask import Flask, render_template, request, redirect, url_for, session, flash, send_from_directory, abort, jsonify, g
+from flask import Flask, Response, render_template, request, redirect, url_for, session, flash, send_from_directory, abort, jsonify, g
 from flask_babel import Babel, gettext as _
 
 # 配置
@@ -36,19 +37,35 @@ app.config['BABEL_TRANSLATION_DIRECTORIES'] = 'translations'
 
 app.secret_key = FLASK_SECRET
 
-# helper
+# ---------- 多语言支持 ----------
 def alt_url(lang, external=False):
     args = dict(request.view_args or {})
     args['lang'] = lang
     return url_for(request.endpoint, _external=external, **args)
 app.jinja_env.globals['alt_url'] = alt_url
 
+@app.url_value_preprocessor
+def pull_lang(endpoint, values):
+    if values is None:
+        return
+    lang = values.pop('lang', None)
+    if lang in app.config['BABEL_SUPPORTED_LOCALES']:
+        g.lang = lang
+    else:
+        g.lang = 'en'
+
+@app.url_defaults
+def add_lang(endpoint, values):
+    if 'lang' in values or not hasattr(g, 'lang'):
+        return
+    values['lang'] = g.lang
+
 # 初始化Babel
 def get_locale():
     return getattr(g, 'lang', 'en')
 babel = Babel(app, locale_selector=get_locale)
 
-# ---------- 数据库初始化 ----------
+# ---------- 数据库 ----------
 def init_db():
     """初始化数据库"""
     conn = sqlite3.connect('db/db.sqlite3')
@@ -217,22 +234,6 @@ def unzip(zip_path, dest):
                 continue
             with z.open(info) as src, open(target, "wb") as dst:
                 shutil.copyfileobj(src, dst)
-
-@app.url_value_preprocessor
-def pull_lang(endpoint, values):
-    if values is None:
-        return
-    lang = values.pop('lang', None)
-    if lang in app.config['BABEL_SUPPORTED_LOCALES']:
-        g.lang = lang
-    else:
-        g.lang = 'en'
-
-@app.url_defaults
-def add_lang(endpoint, values):
-    if 'lang' in values or not hasattr(g, 'lang'):
-        return
-    values['lang'] = g.lang
 
 # ---------- 路由 ----------
 @app.route('/')
@@ -740,7 +741,64 @@ def api_search():
         "query": query,
         "results": results
     })
+# ---------- SEO优化 ----------
+@app.route('/robots.txt')
+def robots():
+    return Response(
+        "User-agent: *\n"
+        "Allow: /\n"
+        "Sitemap: https://upypi.net/sitemap.xml\n",
+        mimetype="text/plain"
+    )
 
+@app.route('/sitemap.xml')
+def sitemap():
+    conn = get_db()
+
+    # 获取所有包
+    packages = conn.execute('''
+        SELECT name, version, created_at
+        FROM packages
+        ORDER BY created_at DESC
+    ''').fetchall()
+
+    conn.close()
+
+    pages = []
+
+    # 首页
+    for lang in ['en', 'zh']:
+        pages.append({
+            "loc": url_for('index', lang=lang, _external=True),
+            "lastmod": datetime.utcnow().date().isoformat()
+        })
+
+    # 包页面
+    for pkg in packages:
+        name = pkg["name"]
+        version = pkg["version"]
+
+        for lang in ['en', 'zh']:
+            pages.append({
+                "loc": url_for('package_detail', name=name, version=version, lang=lang, _external=True),
+                "lastmod": pkg["created_at"]
+            })
+
+    # 生成 XML
+    xml = ['<?xml version="1.0" encoding="UTF-8"?>']
+    xml.append('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">')
+
+    for page in pages:
+        xml.append("<url>")
+        xml.append(f"<loc>{page['loc']}</loc>")
+        xml.append(f"<lastmod>{page['lastmod']}</lastmod>")
+        xml.append("</url>")
+
+    xml.append("</urlset>")
+
+    return Response("\n".join(xml), mimetype="application/xml")
+
+# ---------- 包文件公开 ----------
 @app.route('/pkgs/<path:filename>')
 def serve_packages(filename):
     """提供包文件的静态访问"""
