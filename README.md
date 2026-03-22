@@ -11,7 +11,7 @@
 
 ## Related Information
 * Platform URL: https://upypi.net/
-* User Guide: https://f1829ryac0m.feishu.cn/wiki/WZtiwbHVjirCc1k6Z3ZcSjF2nvb?from=from_copylink
+* User Guide: https://f1829ryac0m.feishu.cn/wiki/HCZ5wtdlViTm8VkgMnFclgHhnoh
 
 # Deployment
 ## Translation Functionality
