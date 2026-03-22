@@ -35,6 +35,7 @@
                         <ul>
                             <li>{% trans %}ZIP必须包含 package.json 文件{% endtrans %}</li>
                             <li><code>package.json</code> {% trans %}字段必须包含{% endtrans %}<code> name</code>,<code>version</code></li>
+                            <li>{% trans %}文件大小不超过 10MiB{% endtrans %}</li>
                         </ul>
                     </div>
                     
@@ -48,7 +49,56 @@
                 </form>
             </div>
         </div>
-        
+
+        <div class="card mt-4">
+            <div class="card-body">
+                <h2 class="mb-4"><i class="bi bi-git"></i> {% trans %}从 Git 仓库提交包{% endtrans %}</h2>
+
+                <form method="post" id="submitForm" action="{{ url_for('submit', lang=g.lang) }}">
+                    <div class="mb-4">
+                        <label for="git_url" class="form-label">
+                            <strong>{% trans %}Git 仓库 URL{% endtrans %}</strong>
+                        </label>
+                        <input type="url" class="form-control" name="git_url" id="git_url" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="git_branch" class="form-label">
+                            <strong>{% trans %}分支（Branch）{% endtrans %}</strong>
+                        </label>
+                        <input type="text" class="form-control" name="git_branch" id="git_branch" value="main">
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="git_paths" class="form-label">
+                            <strong>{% trans %}目标文件夹列表（/开头）{% endtrans %}</strong>
+                        </label>
+                        <input type="text" class="form-control" name="git_paths" id="git_paths" placeholder="/src,/lib">
+                        <div class="form-text">{% trans %}逗号分隔的路径，空表示整个仓库{% endtrans %}</div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <h5><i class="bi bi-info-circle"></i> {% trans %}提交要求{% endtrans %}：</h5>
+                        <ul>
+                            <li>{% trans %}目标文件夹必须包含 package.json 文件{% endtrans %}</li>
+                            <li><code>package.json</code> {% trans %}字段必须包含{% endtrans %}<code> name</code>,<code>version</code></li>
+                            <li>{% trans %}总文件大小不超过 10MiB{% endtrans %}</li>
+                            <li>{% trans %}目标文件夹不包含符号链接{% endtrans %}</li>
+                            
+                        </ul>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary me-md-2">{% trans %}取消{% endtrans %}</a>
+                        <button type="submit" class="btn btn-primary" id="submitGitBtn">
+                            <span class="spinner-border spinner-border-sm d-none" role="status" id="loadingGitSpinner"></span>
+                            {% trans %}提交包{% endtrans %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <div class="card mt-4">
             <div class="card-header">
                 <i class="bi bi-folder"></i>
@@ -167,6 +217,13 @@ document.addEventListener("DOMContentLoaded", function () {
     tooltipTriggerList.map(function (el) {
         return new bootstrap.Tooltip(el);
     });
+});
+
+document.getElementById('submitForm').addEventListener('submit', function() {
+    const btn = document.getElementById('submitGitBtn');
+    const spinner = document.getElementById('loadingGitSpinner');
+    spinner.classList.remove('d-none');
+    btn.disabled = true;
 });
 </script>
 {% endblock %}

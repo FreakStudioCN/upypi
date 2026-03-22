@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-03-22 19:14+0000\n"
+"POT-Creation-Date: 2026-03-22 20:49+0000\n"
 "PO-Revision-Date: 2026-03-06 19:33+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -18,65 +18,79 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.17.0\n"
 
-#: app.py:115
+#: app.py:120
 msgid "请先登录"
 msgstr "Please log in first"
 
-#: app.py:318
+#: app.py:325
 msgid "OAuth 认证失败 (state mismatch)"
 msgstr "OAuth authentication failed (state mismatch)"
 
-#: app.py:337
+#: app.py:344
 msgid "OAuth token 错误"
 msgstr "OAuth token error"
 
-#: app.py:356
+#: app.py:363
 msgid "GitHub 用户信息获取失败"
 msgstr "Failed to retrieve GitHub user information"
 
-#: app.py:386
+#: app.py:393
 #, python-brace-format
 msgid "欢迎回来，{}!"
 msgstr "Welcome back, {}!"
 
-#: app.py:393
+#: app.py:400
 msgid "已成功退出登录"
 msgstr "Successfully logged out"
 
-#: app.py:501
+#: app.py:449
+msgid "Git URL不能为空"
+msgstr ""
+
+#: app.py:538
+#, python-format
+msgid "拉取仓库失败: %(msg)s"
+msgstr ""
+
+#: app.py:542
+#, python-format
+msgid "提交失败: %(msg)s"
+msgstr ""
+
+#: app.py:558
 msgid "没有选择文件"
 msgstr "No file selected"
 
-#: app.py:523
+#: app.py:577
 #, python-format
 msgid "%(name)s 缺少package.json"
 msgstr "%(name)s is missing package.json"
 
-#: app.py:537
+#: app.py:591
 #, python-format
 msgid "%(name)s %(version)s 已存在"
 msgstr "Package %(name)s version %(version)s already exists"
 
-#: app.py:554
+#: app.py:608
 #, python-format
 msgid "%(name)s %(version)s 上传成功"
 msgstr "Package %(name)s %(version)s uploaded successfully!"
 
-#: app.py:558
+#: app.py:612
 #, python-format
 msgid "%(name)s 上传失败"
 msgstr "Package %(name)s upload failed"
 
-#: app.py:635
+#: app.py:753
 msgid "包版本不存在或没有删除权限"
 msgstr "Package version does not exist or you do not have permission"
 
-#: app.py:663
+#: app.py:781
 #, python-brace-format
 msgid "包 {}的所有版本已删除"
 msgstr "All versions of package {} have been deleted"
 
-#: app.py:666
+#: app.py:784
 #, python-brace-format
 msgid "包 {} 版本 {} 已删除"
 msgstr "Package {} version {} has been deleted"
@@ -118,7 +132,7 @@ msgstr "All Packages"
 msgid "我的面板"
 msgstr "My Dashboard"
 
-#: templates/base.html:115 templates/dashboard.html:15 templates/upload.html:45
+#: templates/base.html:115 templates/dashboard.html:15 templates/upload.html:46
 msgid "上传包"
 msgstr "Upload Package"
 
@@ -194,7 +208,8 @@ msgid "暂无包上传，成为第一个上传者吧！"
 msgstr "No packages uploaded yet. Be the first to upload one!"
 
 #: templates/index.html:87
-msgid "如何上传？"
+#, fuzzy
+msgid "如何使用？"
 msgstr "How to Upload?"
 
 #: templates/index.html:89
@@ -265,7 +280,7 @@ msgstr "Confirm Delete Version"
 msgid "此操作将删除该版本的所有文件，且无法恢复！"
 msgstr "This will delete all files of this version and cannot be undone!"
 
-#: templates/package.html:183 templates/upload.html:42
+#: templates/package.html:183 templates/upload.html:43 templates/upload.html:92
 msgid "取消"
 msgstr "Cancel"
 
@@ -325,31 +340,76 @@ msgstr "Upload Requirements"
 msgid "ZIP必须包含 package.json 文件"
 msgstr "ZIP must contain package.json file"
 
-#: templates/upload.html:37
+#: templates/upload.html:37 templates/upload.html:84
 msgid "字段必须包含"
 msgstr "Required Fields"
 
+#: templates/upload.html:38
+msgid "文件大小不超过 10MiB"
+msgstr ""
+
 #: templates/upload.html:55
+msgid "从 Git 仓库提交包"
+msgstr ""
+
+#: templates/upload.html:60
+msgid "Git 仓库 URL"
+msgstr ""
+
+#: templates/upload.html:67
+msgid "分支（Branch）"
+msgstr ""
+
+#: templates/upload.html:74
+msgid "目标文件夹列表（/开头）"
+msgstr ""
+
+#: templates/upload.html:77
+msgid "逗号分隔的路径，空表示整个仓库"
+msgstr ""
+
+#: templates/upload.html:81
+msgid "提交要求"
+msgstr ""
+
+#: templates/upload.html:83
+#, fuzzy
+msgid "目标文件夹必须包含 package.json 文件"
+msgstr "ZIP must contain package.json file"
+
+#: templates/upload.html:85
+msgid "总文件大小不超过 10MiB"
+msgstr ""
+
+#: templates/upload.html:86
+msgid "目标文件夹不包含符号链接"
+msgstr ""
+
+#: templates/upload.html:95
+msgid "提交包"
+msgstr ""
+
+#: templates/upload.html:105
 msgid "ZIP结构"
 msgstr "ZIP Structure"
 
-#: templates/upload.html:71
+#: templates/upload.html:121
 msgid "package.json 规范说明"
 msgstr "package.json Specification"
 
-#: templates/upload.html:76
+#: templates/upload.html:126
 msgid "最小必需字段"
 msgstr "Minimum Required Fields"
 
-#: templates/upload.html:84
+#: templates/upload.html:134
 msgid "MicroPython (mip) 解析字段"
 msgstr "MicroPython (mip) Fields"
 
-#: templates/upload.html:97
+#: templates/upload.html:147
 msgid "upypi平台扩展字段（可选）"
 msgstr "upypi Platform Extended Fields (Optional)"
 
-#: templates/upload.html:100
+#: templates/upload.html:150
 msgid "chips 表示该包依赖特定芯片，fw 表示依赖特定固件"
 msgstr "chips indicates hardware dependency, fw indicates firmware dependency"
 
