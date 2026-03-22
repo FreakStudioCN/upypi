@@ -18,13 +18,13 @@ from flask_babel import Babel, gettext as _
 # 配置
 GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID')
 GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET')
-FLASK_SECRET = 'abc'#os.getenv('FLASK_SECRET')
-# if not GITHUB_CLIENT_ID:
-#     raise RuntimeError("GITHUB_CLIENT_ID is not set in the environment.")
-# if not GITHUB_CLIENT_SECRET:
-#     raise RuntimeError("GITHUB_CLIENT_SECRET is not set in the environment.")
-# if not FLASK_SECRET:
-#     raise RuntimeError("FLASK_SECRET is not set in the environment.")
+FLASK_SECRET = os.getenv('FLASK_SECRET')
+if not GITHUB_CLIENT_ID:
+    raise RuntimeError("GITHUB_CLIENT_ID is not set in the environment.")
+if not GITHUB_CLIENT_SECRET:
+    raise RuntimeError("GITHUB_CLIENT_SECRET is not set in the environment.")
+if not FLASK_SECRET:
+    raise RuntimeError("FLASK_SECRET is not set in the environment.")
 
 # 初始化应用
 app = Flask(__name__)
@@ -235,7 +235,7 @@ def unzip(zip_path, dest):
             with z.open(info) as src, open(target, "wb") as dst:
                 shutil.copyfileobj(src, dst)
 
-# ---------- 路由 ----------
+# ---------- 根路由 ----------
 @app.route('/')
 def root():
     return redirect('/en/')
@@ -274,39 +274,39 @@ def index():
                          recent_packages=recent_packages,
                          total_packages=total_packages,
                          user=get_current_user())
-
+# ---------- 用户管理 ----------
 @app.route('/<lang>/login', strict_slashes=False)
 def login():
     """开发模式：直接登录 test 用户"""
-    conn = get_db()
-    conn.execute(
-        'INSERT OR IGNORE INTO users (github_id, login, name) VALUES (0,"test","test")'
-    )
-    user = conn.execute(
-        'SELECT id FROM users WHERE github_id = 0'
-    ).fetchone()
+    # conn = get_db()
+    # conn.execute(
+    #     'INSERT OR IGNORE INTO users (github_id, login, name) VALUES (0,"test","test")'
+    # )
+    # user = conn.execute(
+    #     'SELECT id FROM users WHERE github_id = 0'
+    # ).fetchone()
 
-    conn.commit()
-    conn.close()
+    # conn.commit()
+    # conn.close()
 
-    session['user_id'] = user["id"]
-    session['github_login'] = "test"
+    # session['user_id'] = user["id"]
+    # session['github_login'] = "test"
 
-    flash(_('欢迎回来，{}!').format("test"), 'success')
-    return redirect(url_for('dashboard', lang=g.lang))
+    # flash(_('欢迎回来，{}!').format("test"), 'success')
+    # return redirect(url_for('dashboard', lang=g.lang))
 
     """GitHub OAuth 登录"""
-    # state = os.urandom(16).hex()
-    # session['oauth_state'] = state
-    # redirect_uri = url_for('callback', _external=True)
+    state = os.urandom(16).hex()
+    session['oauth_state'] = state
+    redirect_uri = url_for('callback', _external=True)
     
-    # auth_url = (f"https://github.com/login/oauth/authorize"
-    #             f"?client_id={GITHUB_CLIENT_ID}"
-    #             f"&state={state}"
-    #             f"&redirect_uri={redirect_uri}"
-    #             f"&scope=read:user")
+    auth_url = (f"https://github.com/login/oauth/authorize"
+                f"?client_id={GITHUB_CLIENT_ID}"
+                f"&state={state}"
+                f"&redirect_uri={redirect_uri}"
+                f"&scope=read:user")
     
-    # return redirect(auth_url)
+    return redirect(auth_url)
 
 @app.route('/callback', strict_slashes=False)
 def callback():
@@ -425,6 +425,67 @@ def dashboard():
     return render_template('dashboard.html', 
                          user=user,
                          packages=user_packages)
+
+# ---------- 包管理 ----------
+@app.route('/packages.json')
+def packages_json():
+    conn = get_db()
+
+    rows = conn.execute('''
+        SELECT name, version
+        FROM packages p
+        WHERE id = (
+            SELECT MAX(id)
+            FROM packages p2
+            WHERE p2.name = p.name
+        )
+        ORDER BY name ASC
+    ''').fetchall()
+
+    conn.close()
+
+    response = jsonify({
+            "packages": [
+                {
+                    "name": row["name"],
+                    "version": row["version"]
+                }
+                for row in rows
+            ]
+        })
+    response.headers['Cache-Control'] = 'public, max-age=300'
+    return response
+
+@app.route('/<lang>/packages')
+def packages():
+    conn = get_db()
+
+    all_packages = conn.execute('''
+        SELECT p.*, u.login AS owner_name
+        FROM packages p
+        JOIN users u ON p.owner_id = u.id
+        WHERE p.id = (
+            SELECT MAX(id)
+            FROM packages p2
+            WHERE p2.name = p.name
+        )
+        ORDER BY p.name ASC
+    ''').fetchall()
+
+    conn.close()
+
+    for i, row in enumerate(all_packages):
+        pkg = dict(row)
+        info = get_package_json(Path("pkgs") / pkg["name"] / pkg["version"])
+        if info:
+            pkg.update(info)
+        all_packages[i] = pkg
+
+    return render_template(
+        'packages.html',
+        packages=all_packages,
+        user=get_current_user()
+    )
 
 @app.route('/<lang>/upload', methods=['GET', 'POST'], strict_slashes=False)
 @login_required
@@ -698,49 +759,6 @@ def search():
                          results=results,
                          user=get_current_user())
 
-@app.route('/api/search')
-def api_search():
-    """API 搜索接口"""
-    query = request.args.get('q', '').strip()
-
-    if not query:
-        return jsonify({
-            "query": query,
-            "results": []
-        })
-
-    conn = get_db()
-
-    search_pattern = f'%{query}%'
-
-    rows = conn.execute('''
-    SELECT name, version
-    FROM packages p
-    WHERE name LIKE ?
-    AND id = (
-        SELECT MAX(id)
-        FROM packages p2
-        WHERE p2.name = p.name
-    )
-    ''', (search_pattern,)).fetchall()
-
-    conn.close()
-
-    results = []
-
-    for row in rows:
-        name = row["name"]
-        version = row["version"]
-
-        results.append({
-            "name": name,
-            "url": f"https://upypi.net/pkgs/{name}/{version}"
-        })
-
-    return jsonify({
-        "query": query,
-        "results": results
-    })
 # ---------- SEO优化 ----------
 @app.route('/robots.txt')
 def robots():
@@ -797,6 +815,51 @@ def sitemap():
     xml.append("</urlset>")
 
     return Response("\n".join(xml), mimetype="application/xml")
+
+# ---------- API 端点 ----------
+@app.route('/api/search')
+def api_search():
+    """API 搜索接口"""
+    query = request.args.get('q', '').strip()
+
+    if not query:
+        return jsonify({
+            "query": query,
+            "results": []
+        })
+
+    conn = get_db()
+
+    search_pattern = f'%{query}%'
+
+    rows = conn.execute('''
+    SELECT name, version
+    FROM packages p
+    WHERE name LIKE ?
+    AND id = (
+        SELECT MAX(id)
+        FROM packages p2
+        WHERE p2.name = p.name
+    )
+    ''', (search_pattern,)).fetchall()
+
+    conn.close()
+
+    results = []
+
+    for row in rows:
+        name = row["name"]
+        version = row["version"]
+
+        results.append({
+            "name": name,
+            "url": f"https://upypi.net/pkgs/{name}/{version}"
+        })
+
+    return jsonify({
+        "query": query,
+        "results": results
+    })
 
 # ---------- 包文件公开 ----------
 @app.route('/pkgs/<path:filename>')

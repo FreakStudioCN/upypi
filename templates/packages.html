@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}{% trans %}所有包{% endtrans %}{% endblock %}
+
+{% block content %}
+
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>{% trans %}浏览仓库中的所有 MicroPython 包{% endtrans %}</h2>
+    </div>
+</div>
+
+<div class="row">
+    {% if packages %}
+        {% for package in packages %}
+        <div class="col-md-4 mb-4">
+            <div class="card package-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a href="{{ url_for('package_detail', name=package.name) }}" class="text-decoration-none">
+                            {{ package.name }}
+                        </a>
+                        <span class="badge bg-primary version-badge">{{ package.version }}</span>
+                    </h5>
+
+                    <p class="card-text text-muted">
+                        {% if package.description %}
+                            {{ package.description[:100] }}{% if package.description|length > 100 %}...{% endif %}
+                        {% else %}
+                            {% trans %}暂无描述{% endtrans %}
+                        {% endif %}
+                    </p>
+
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <small class="text-muted">
+                            <i class="bi bi-person"></i> {{ package.owner_name }}
+                        </small>
+
+                        {% if package.chips %}
+                        <small class="text-muted">
+                            <i class="bi bi-cpu"></i> {{ package.chips }}
+                        </small>
+                        {% endif %}
+
+                        {% if package.fw %}
+                        <small class="text-muted">
+                            <i class="bi bi-memory"></i> {{ package.fw }}
+                        </small>
+                        {% endif %}
+
+                        <small class="text-muted">
+                            <i class="bi bi-clock"></i> {{ package.created_at[:10] }}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="alert alert-info">
+                {% trans %}暂无包{% endtrans %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- 预留分页（以后你加 LIMIT/OFFSET 直接用） -->
+{# 
+<div class="row mt-4">
+    <div class="col text-center">
+        <nav>
+            <ul class="pagination justify-content-center">
+                <li class="page-item disabled"><a class="page-link">«</a></li>
+                <li class="page-item active"><a class="page-link">1</a></li>
+                <li class="page-item"><a class="page-link">2</a></li>
+                <li class="page-item"><a class="page-link">»</a></li>
+            </ul>
+        </nav>
+    </div>
+</div>
+#}
+
+{% endblock %}

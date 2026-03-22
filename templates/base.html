@@ -104,6 +104,9 @@ document.addEventListener("DOMContentLoaded", function () {
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{{ url_for('packages') }}">{% trans %}浏览所有包{% endtrans %}</a>
+                    </li>
                     {% if user %}
                     <li class="nav-item">
                         <a class="nav-link" href="{{ url_for('dashboard') }}">{% trans %}我的面板{% endtrans %}</a>
