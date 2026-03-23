@@ -292,13 +292,10 @@ def login():
     # user = conn.execute(
     #     'SELECT id FROM users WHERE github_id = 0'
     # ).fetchone()
-
     # conn.commit()
     # conn.close()
-
     # session['user_id'] = user["id"]
     # session['github_login'] = "test"
-
     # flash(_('欢迎回来，{}!').format("test"), 'success')
     # return redirect(url_for('dashboard', lang=g.lang))
 
@@ -306,13 +303,11 @@ def login():
     state = os.urandom(16).hex()
     session['oauth_state'] = state
     redirect_uri = url_for('callback', _external=True)
-    
     auth_url = (f"https://github.com/login/oauth/authorize"
                 f"?client_id={GITHUB_CLIENT_ID}"
                 f"&state={state}"
                 f"&redirect_uri={redirect_uri}"
                 f"&scope=read:user")
-    
     return redirect(auth_url)
 
 @app.route('/callback', strict_slashes=False)
@@ -437,11 +432,15 @@ def dashboard():
 # ---------- 包提交 ----------
 @login_required
 def package_submit(file_name, dir):
+    repo_size = sum(f.stat().st_size for f in dir.rglob('*') if f.is_file())
+    if repo_size > 10 * 1024 * 1024:
+        raise ValueError("too large")
+    
     user = get_current_user()
 
     info = get_package_json(dir, dir.stat().st_mtime)
     if not info:
-        return flash(_('%(name)s 缺少package.json', name=str(file_name)), 'error')
+        raise ValueError("no package.json")
 
     name = info["name"]
     version = info["version"]
@@ -504,6 +503,7 @@ def submit():
                     package_submit(git_url+path, src)
         else:
             package_submit(git_url, temp_dir)
+        return redirect(url_for('dashboard', lang=g.lang))
 
     except subprocess.CalledProcessError as e:
         app.logger.error(f'Git clone error: {e.stderr.decode()}')
@@ -515,8 +515,6 @@ def submit():
         return redirect(url_for('upload', lang=g.lang))
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
-
-    return redirect(url_for('dashboard', lang=g.lang))
 
 @app.route('/<lang>/upload', methods=['GET', 'POST'], strict_slashes=False)
 @login_required
@@ -547,7 +545,8 @@ def upload():
 
         except Exception as e:
             app.logger.error(f"upload error: {e}")
-            flash(_('%(name)s 上传失败', name=file.filename), 'error')
+            flash(_('%(name)s 上传失败: %(msg)s', name=file.filename, msg=str(e)), 'error')
+            return redirect(url_for('upload', lang=g.lang))
         finally:
             # 清理临时目录
             shutil.rmtree(temp_dir, ignore_errors=True)

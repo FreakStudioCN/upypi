@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-03-23 04:22+0000\n"
+"POT-Creation-Date: 2026-03-23 04:58+0000\n"
 "PO-Revision-Date: 2026-03-06 19:33+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -22,43 +22,38 @@ msgstr ""
 msgid "请先登录"
 msgstr "Please log in first"
 
-#: app.py:325
+#: app.py:320
 msgid "OAuth 认证失败 (state mismatch)"
 msgstr "OAuth authentication failed (state mismatch)"
 
-#: app.py:344
+#: app.py:339
 msgid "OAuth token 错误"
 msgstr "OAuth token error"
 
-#: app.py:363
+#: app.py:358
 msgid "GitHub 用户信息获取失败"
 msgstr "Failed to retrieve GitHub user information"
 
-#: app.py:393
+#: app.py:388
 #, python-brace-format
 msgid "欢迎回来，{}!"
 msgstr "Welcome back, {}!"
 
-#: app.py:400
+#: app.py:395
 msgid "已成功退出登录"
 msgstr "Successfully logged out"
 
-#: app.py:444
-#, python-format
-msgid "%(name)s 缺少package.json"
-msgstr "%(name)s is missing package.json"
-
-#: app.py:458
+#: app.py:457
 #, python-format
 msgid "%(name)s %(version)s 已存在"
 msgstr "Package %(name)s version %(version)s already exists"
 
-#: app.py:473
+#: app.py:472
 #, python-format
 msgid "%(name)s %(version)s 上传成功"
 msgstr "Package %(name)s %(version)s uploaded successfully!"
 
-#: app.py:484
+#: app.py:483
 msgid "Git URL不能为空"
 msgstr "Git URL cannot be empty"
 
@@ -72,25 +67,24 @@ msgstr "Failed to clone repository: %(msg)s"
 msgid "提交失败: %(msg)s"
 msgstr "Submit failed: %(msg)s"
 
-#: app.py:530
+#: app.py:528
 msgid "没有选择文件"
 msgstr "No file selected"
 
-#: app.py:550
-#, python-format
-msgid "%(name)s 上传失败"
-msgstr "Package %(name)s upload failed"
+#: app.py:548
+msgid "%(name)s 上传失败: %(msg)s"
+msgstr "%(name)s upload failed: %(msg)s"
 
-#: app.py:691
+#: app.py:690
 msgid "包版本不存在或没有删除权限"
 msgstr "Package version does not exist or you do not have permission"
 
-#: app.py:719
+#: app.py:718
 #, python-brace-format
 msgid "包 {}的所有版本已删除"
 msgstr "All versions of package {} have been deleted"
 
-#: app.py:722
+#: app.py:721
 #, python-brace-format
 msgid "包 {} 版本 {} 已删除"
 msgstr "Package {} version {} has been deleted"
@@ -428,4 +422,7 @@ msgstr "chips indicates hardware dependency, fw indicates firmware dependency"
 
 #~ msgid "包文件夹结构"
 #~ msgstr "Package Folder Structure"
+
+#~ msgid "%(name)s 缺少package.json"
+#~ msgstr "%(name)s is missing package.json"
 
