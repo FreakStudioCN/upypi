@@ -494,6 +494,7 @@ def submit():
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE
         )
+        shutil.rmtree(temp_dir / '.git', ignore_errors=True)
 
         # 如果指定了子路径，只保留这些路径
         if git_paths:
