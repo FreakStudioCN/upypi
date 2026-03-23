@@ -435,15 +435,50 @@ def dashboard():
                          packages=user_packages)
 
 # ---------- 包提交 ----------
+@login_required
+def package_submit(file_name, dir):
+    user = get_current_user()
+
+    info = get_package_json(dir, dir.stat().st_mtime)
+    if not info:
+        return flash(_('%(name)s 缺少package.json', name=str(file_name)), 'error')
+
+    name = info["name"]
+    version = info["version"]
+
+    conn = get_db()
+
+    exists = conn.execute(
+        'SELECT 1 FROM packages WHERE name=? AND version=?',
+        (name, version)
+    ).fetchone()
+
+    if exists:
+        conn.close()
+        return flash(_('%(name)s %(version)s 已存在', name=name, version=version), 'error')
+        
+    conn.execute(
+        'INSERT INTO packages (name, version, owner_id) VALUES (?, ?, ?)',
+        (name, version, user['id'])
+    )
+
+    conn.commit()
+    conn.close()
+
+    target = Path("pkgs") / name / version
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    shutil.move(str(dir), str(target))
+
+    flash(_('%(name)s %(version)s 上传成功', name=name, version=version), 'success')
+
 @app.route('/<lang>/submit', methods=['POST'], strict_slashes=False)
 @login_required
 def submit():
-    user = get_current_user()
-    
     git_url = request.form.get('git_url')
     git_branch = request.form.get('git_branch') or 'main'
     git_paths = request.form.get('git_paths', '').split(',')
-    git_paths = [p.strip() for p in git_paths if p.strip()]
+    git_paths = [p.strip() for p in git_paths]
     
     if not git_url:
         flash(_('Git URL不能为空'), 'error')
@@ -451,10 +486,7 @@ def submit():
 
     temp_dir = Path(tempfile.gettempdir()) / str(uuid.uuid4())
     temp_dir.mkdir(parents=True)
-    
-    submitted = []   # 成功提交的包列表
-    errors = []      # 提交失败信息列表
-    
+
     try:
         # 克隆指定分支到临时目录
         subprocess.run(
@@ -465,73 +497,13 @@ def submit():
         )
 
         # 如果指定了子路径，只保留这些路径
-        working_dirs = []
         if git_paths:
-            filtered_dir = temp_dir / "extract"
-            filtered_dir.mkdir()
             for path in git_paths:
-                src = temp_dir / path.lstrip('/')
+                src = temp_dir / path
                 if src.exists():
-                    dest = filtered_dir / path.lstrip('/')
-                    dest.parent.mkdir(parents=True, exist_ok=True)
-                    if src.is_dir():
-                        shutil.copytree(src, dest)
-                    else:
-                        shutil.copy2(src, dest)
-            working_dirs = [d for d in filtered_dir.iterdir() if d.is_dir()]
+                    package_submit(git_url+path, src)
         else:
-            working_dirs = [temp_dir]
-
-        # 遍历所有目录，查找 package.json
-        for folder in working_dirs:
-            for subfolder in folder.rglob('*'):
-                if subfolder.is_dir():
-                    info = get_package_json(subfolder, subfolder.stat().st_mtime)
-                    if not info:
-                        continue
-
-                    name = info['name']
-                    version = info['version']
-
-                    # 检查数据库是否已存在
-                    conn = get_db()
-                    exists = conn.execute(
-                        'SELECT 1 FROM packages WHERE name=? AND version=?',
-                        (name, version)
-                    ).fetchone()
-                    if exists:
-                        errors.append(f"{name} {version} 已存在")
-                        conn.close()
-                        continue
-
-                    conn.execute(
-                        'INSERT INTO packages (name, version, owner_id) VALUES (?, ?, ?)',
-                        (name, version, user['id'])
-                    )
-                    conn.commit()
-                    conn.close()
-
-                    # 限制包大小
-                    MAX_SIZE = 10 * 1024 * 1024
-                    total_size = sum(f.stat().st_size for f in subfolder.rglob('*') if f.is_file())
-                    if total_size > MAX_SIZE:
-                        errors.append(f"{name} {version} 超过大小限制")
-                        continue
-
-                    # 移动到 pkgs 目录
-                    target_dir = Path('pkgs') / name / version
-                    target_dir.parent.mkdir(parents=True, exist_ok=True)
-                    shutil.move(str(subfolder), str(target_dir))
-
-                    submitted.append(f"{name} {version} 提交成功")
-
-        # 汇总提示信息
-        for msg in submitted:
-            flash(_(msg), 'success')
-        for msg in errors:
-            flash(_(msg), 'error')
-
-        return redirect(url_for('dashboard', lang=g.lang))
+            package_submit(git_url, temp_dir)
 
     except subprocess.CalledProcessError as e:
         app.logger.error(f'Git clone error: {e.stderr.decode()}')
@@ -544,14 +516,14 @@ def submit():
     finally:
         shutil.rmtree(temp_dir, ignore_errors=True)
 
+    return redirect(url_for('dashboard', lang=g.lang))
+
 @app.route('/<lang>/upload', methods=['GET', 'POST'], strict_slashes=False)
 @login_required
 def upload():
     """上传包"""
     if request.method == 'GET':
         return render_template('upload.html', user=get_current_user())
-
-    user = get_current_user()
     files = request.files.getlist('files')
 
     if not files:
@@ -571,41 +543,7 @@ def upload():
 
             unzip(zip_path, extract_dir)
 
-            info = get_package_json(extract_dir, extract_dir.stat().st_mtime)
-
-            if not info:
-                flash(_('%(name)s 缺少package.json', name=file.filename), 'error')
-                continue
-
-            name = info["name"]
-            version = info["version"]
-
-            conn = get_db()
-
-            exists = conn.execute(
-                'SELECT 1 FROM packages WHERE name=? AND version=?',
-                (name, version)
-            ).fetchone()
-
-            if exists:
-                flash(_('%(name)s %(version)s 已存在', name=name, version=version), 'error')
-                conn.close()
-                continue
-
-            conn.execute(
-                'INSERT INTO packages (name, version, owner_id) VALUES (?, ?, ?)',
-                (name, version, user['id'])
-            )
-
-            conn.commit()
-            conn.close()
-
-            target = Path("pkgs") / name / version
-            target.parent.mkdir(parents=True, exist_ok=True)
-
-            shutil.move(str(extract_dir), str(target))
-
-            flash(_('%(name)s %(version)s 上传成功', name=name, version=version), 'success')
+            package_submit(file.filename, extract_dir)
 
         except Exception as e:
             app.logger.error(f"upload error: {e}")

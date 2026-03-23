@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2026-03-22 20:49+0000\n"
+"POT-Creation-Date: 2026-03-23 04:22+0000\n"
 "PO-Revision-Date: 2026-03-06 19:33+0000\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: en\n"
@@ -43,54 +43,54 @@ msgstr "Welcome back, {}!"
 msgid "已成功退出登录"
 msgstr "Successfully logged out"
 
-#: app.py:449
-msgid "Git URL不能为空"
-msgstr "Git URL cannot be empty"
-
-#: app.py:538
-#, python-format
-msgid "拉取仓库失败: %(msg)s"
-msgstr "Failed to clone repository: %(msg)s"
-
-#: app.py:542
-#, python-format
-msgid "提交失败: %(msg)s"
-msgstr "Submit failed: %(msg)s"
-
-#: app.py:558
-msgid "没有选择文件"
-msgstr "No file selected"
-
-#: app.py:577
+#: app.py:444
 #, python-format
 msgid "%(name)s 缺少package.json"
 msgstr "%(name)s is missing package.json"
 
-#: app.py:591
+#: app.py:458
 #, python-format
 msgid "%(name)s %(version)s 已存在"
 msgstr "Package %(name)s version %(version)s already exists"
 
-#: app.py:608
+#: app.py:473
 #, python-format
 msgid "%(name)s %(version)s 上传成功"
 msgstr "Package %(name)s %(version)s uploaded successfully!"
 
-#: app.py:612
+#: app.py:484
+msgid "Git URL不能为空"
+msgstr "Git URL cannot be empty"
+
+#: app.py:510
+#, python-format
+msgid "拉取仓库失败: %(msg)s"
+msgstr "Failed to clone repository: %(msg)s"
+
+#: app.py:514
+#, python-format
+msgid "提交失败: %(msg)s"
+msgstr "Submit failed: %(msg)s"
+
+#: app.py:530
+msgid "没有选择文件"
+msgstr "No file selected"
+
+#: app.py:550
 #, python-format
 msgid "%(name)s 上传失败"
 msgstr "Package %(name)s upload failed"
 
-#: app.py:753
+#: app.py:691
 msgid "包版本不存在或没有删除权限"
 msgstr "Package version does not exist or you do not have permission"
 
-#: app.py:781
+#: app.py:719
 #, python-brace-format
 msgid "包 {}的所有版本已删除"
 msgstr "All versions of package {} have been deleted"
 
-#: app.py:784
+#: app.py:722
 #, python-brace-format
 msgid "包 {} 版本 {} 已删除"
 msgstr "Package {} version {} has been deleted"
@@ -360,8 +360,8 @@ msgid "分支（Branch）"
 msgstr "Branch"
 
 #: templates/upload.html:74
-msgid "目标文件夹列表（/开头）"
-msgstr "Target folder list (start with /)"
+msgid "目标文件夹列表"
+msgstr "Target folder list"
 
 #: templates/upload.html:77
 msgid "逗号分隔的路径，空表示整个仓库"
