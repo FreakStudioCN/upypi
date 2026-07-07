@@ -1,0 +1,6 @@
+upypi.net {
+    reverse_proxy upypi:5000 {
+        header_up X-Forwarded-Proto {scheme}
+        header_up X-Forwarded-Host {host}
+    }
+}

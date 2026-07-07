@@ -20,6 +20,8 @@ import markdown
 from flask import Flask, Response, render_template, request, redirect, url_for, session, flash, send_from_directory, abort, jsonify, g
 from flask_babel import Babel, gettext as _
 
+from werkzeug.middleware.proxy_fix import ProxyFix
+
 # 配置
 GITHUB_CLIENT_ID = os.getenv('GITHUB_CLIENT_ID')
 GITHUB_CLIENT_SECRET = os.getenv('GITHUB_CLIENT_SECRET')
@@ -42,6 +44,7 @@ app.config['BABEL_TRANSLATION_DIRECTORIES'] = 'translations'
 
 app.secret_key = FLASK_SECRET
 
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 # ---------- 多语言支持 ----------
 def alt_url(lang, external=False):
     args = dict(request.view_args or {})

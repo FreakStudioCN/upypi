@@ -1,0 +1,33 @@
+services:
+  upypi:
+    image: ghcr.io/FreakStudioCN/upypi:main
+    restart: unless-stopped
+    environment:
+      GITHUB_CLIENT_ID: "CHAGE"
+      GITHUB_CLIENT_SECRET: "CHAGE"
+      FLASK_SECRET: "CHAGE"
+    command: python3 -m gunicorn -w 2 -k gthread --threads 4 -b 0.0.0.0:5000 app:app
+    volumes:
+      - upypi-db:/workspace/db
+      - upypi-pkgs:/workspace/pkgs
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  upypi-db:
+    name: upypi-db
+  upypi-pkgs:
+    name: upypi-pkgs
+  caddy-config:
+    name: caddy-config
+  caddy-data:
+    name: caddy-data

@@ -26,8 +26,7 @@
     * pybabel compile -d translations
 
 ## Run the Project
-1. Build the container: podman build -t upypi .
-2. Run the container: podman run -d -p 8080:443 upypi (Prepare certificate files and persistent directories yourself)
+docker compose up -d
 
 # About Us
 ![freakstudio-en](docs/freakstudio-en.png)

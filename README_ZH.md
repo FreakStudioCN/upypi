@@ -26,8 +26,7 @@
     * pybabel compile -d translations
 
 ## 运行项目
-1. 构建容器：podman build -t upypi .
-2. 运行容器：podman run -d -p 8080:443 upypi 自行准备证书文件与持久化目录
+docker compose up -d
 
 # 关于我们
 ![freakstudio](docs/freakstudio.jpg)
